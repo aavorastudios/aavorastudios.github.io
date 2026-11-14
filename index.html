@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aavora Studio Portal</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: sidebar register on desktop, scrolling tab strip on phones; content as ledger-like panels */
+:root{
+  --bg:#F2F3EE;--surface:#FFFFFF;--surface-2:#E8EAE2;--ink:#18211E;--muted:#5C6862;--line:#D5D9CE;
+  --accent:#1E6A56;--accent-ink:#FFFFFF;--accent-soft:#DAEAE2;
+  --ok:#2C7A4C;--ok-soft:#DDEFE3;--warn:#9C6200;--warn-soft:#F6E8C6;--bad:#B0362F;--bad-soft:#F5DCDA;
+  --info:#2D5B9A;--info-soft:#DDE6F3;--violet:#684C9E;--violet-soft:#E7E0F2;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111614;--surface:#19201D;--surface-2:#222A26;--ink:#E6EBE7;--muted:#98A39D;--line:#2E3733;
+  --accent:#55B796;--accent-ink:#0C1411;--accent-soft:#1C352C;
+  --ok:#62C68E;--ok-soft:#1B3326;--warn:#E3AA3E;--warn-soft:#382C13;--bad:#E9827A;--bad-soft:#3B1E1C;
+  --info:#82AAE4;--info-soft:#1C283A;--violet:#B79FE2;--violet-soft:#2A223D;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111614;--surface:#19201D;--surface-2:#222A26;--ink:#E6EBE7;--muted:#98A39D;--line:#2E3733;
+  --accent:#55B796;--accent-ink:#0C1411;--accent-soft:#1C352C;
+  --ok:#62C68E;--ok-soft:#1B3326;--warn:#E3AA3E;--warn-soft:#382C13;--bad:#E9827A;--bad-soft:#3B1E1C;
+  --info:#82AAE4;--info-soft:#1C283A;--violet:#B79FE2;--violet-soft:#2A223D;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:26px}h2{font-size:20px}h3{font-size:16px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.btn.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.btn.sm{padding:5px 10px;font-size:12.5px;border-radius:7px}
+.btn.big{padding:12px 18px;font-size:15px;border-radius:10px;justify-content:center}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+label.f{display:flex;flex-direction:column;gap:5px;font-weight:600;font-size:12.5px;color:var(--muted);min-width:0}
+input,select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:64px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.stack{display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-ok{background:var(--ok-soft);color:var(--ok)}.p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)}.p-info{background:var(--info-soft);color:var(--info)}
+.p-violet{background:var(--violet-soft);color:var(--violet)}.p-mute{background:var(--surface-2);color:var(--muted)}
+.p-acc{background:var(--accent-soft);color:var(--accent)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);font-weight:700;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--surface-2)}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tr.sun td{color:var(--muted);background:color-mix(in srgb,var(--surface-2) 50%,transparent)}
+tr.hw td{background:color-mix(in srgb,var(--info-soft) 55%,transparent)}
+.tasklist{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.tasklist li{font-size:12.5px}
+
+/* shell */
+.shell{display:grid;grid-template-columns:230px 1fr;min-height:100%}
+.side{background:var(--surface);border-right:1px solid var(--line);padding-block:20px;padding-inline:14px;display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:10px;align-items:center;padding-inline:6px}
+.brand i{width:32px;height:32px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:var(--accent-ink);font-style:normal;font-family:var(--f-display);font-weight:700;font-size:13px;flex:none}
+.brand b{font-family:var(--f-display);font-size:16px;line-height:1.1;display:block}
+.brand small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{border:none;background:none;text-align:left;padding:9px 10px;border-radius:8px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.nav button:hover{background:var(--surface-2);color:var(--ink)}
+.nav button.on{background:var(--accent-soft);color:var(--accent)}
+.badge{background:var(--bad);color:#fff;border-radius:999px;font-size:11px;padding:0 7px;line-height:18px}
+.who{margin-top:auto;border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:8px;padding-inline:6px}
+.main{padding-block:26px 90px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-width:0}
+.main-in{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.stat{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+.stat b{font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted);font-weight:600}
+.cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.bar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.punchbox{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px}
+.clock{font-family:var(--f-display);font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.timeline{display:flex;flex-direction:column;border-left:2px solid var(--line);margin-left:6px}
+.timeline div{padding:4px 0 10px 14px;position:relative}
+.timeline div::before{content:"";position:absolute;left:-6px;top:10px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.tl-row{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.tl-row b{color:var(--ink);font-weight:600}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:none;background:none;padding:9px 12px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+.note{background:var(--info-soft);color:var(--info);padding:10px 12px;border-radius:9px;font-size:13px}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.money{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:500}
+.plus{color:var(--ok)}.minus{color:var(--bad)}
+.net{display:flex;flex-direction:column;gap:6px}
+.net div{display:flex;justify-content:space-between;gap:12px}
+.net .tot{border-top:1px solid var(--line);padding-top:8px;font-weight:700;font-size:16px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 18px}
+.kv .muted{white-space:nowrap}
+
+/* login */
+.login{min-height:100%;display:grid;place-items:center;padding-block:30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.login-box{width:100%;max-width:420px;display:flex;flex-direction:column;gap:18px}
+.login-box .panel{display:flex;flex-direction:column;gap:14px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border-radius:9px;padding:3px}
+.seg button{border:none;background:none;padding:8px;border-radius:7px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.quick{display:flex;flex-wrap:wrap;gap:6px}
+
+/* modal + toast + demo bar */
+.modal-bg{position:fixed;inset:0;background:rgb(10 14 12 / .45);display:grid;place-items:center;padding:16px;z-index:40}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:580px;max-height:calc(100% - 20px);overflow:auto;padding:20px;display:flex;flex-direction:column;gap:14px;border:1px solid var(--line)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(70px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:9px;font-weight:600;z-index:50;max-width:calc(100% - 32px)}
+.demo{position:fixed;left:0;right:0;bottom:0;background:var(--warn-soft);color:var(--warn);border-top:1px solid var(--line);padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;font-weight:600;z-index:30}
+.demo input{width:auto;padding:3px 6px;font-size:12.5px}
+.demo .btn{padding:3px 9px;font-size:12px}
+
+@media (max-width:820px){
+  .shell{grid-template-columns:1fr}
+  .side{position:sticky;top:env(safe-area-inset-top,0px);height:auto;gap:8px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-right:none;border-bottom:1px solid var(--line);z-index:20}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--surface)}
+  .nav{flex-direction:row;overflow-x:auto;gap:4px}
+  .nav button{white-space:nowrap;padding:7px 10px}
+  .who,.side>.brand{display:none}
+  .mobile-who{display:flex!important}
+}
+.mobile-who{display:none;justify-content:space-between;align-items:center;gap:8px}
+@media (prefers-reduced-motion:no-preference){.btn,.nav button{transition:background .15s}}
+</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}.main{padding-block:26px 40px}</style>
+</head>
+<body>
+<div id="app"></div>
+<noscript>Please turn on JavaScript to use the portal.</noscript>
+<script type="module">
+import {initializeApp,deleteApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged,createUserWithEmailAndPassword,updatePassword,EmailAuthProvider,reauthenticateWithCredential} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {getFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,addDoc,collection,query,where,orderBy,limit,onSnapshot,serverTimestamp,writeBatch,getDocs,Timestamp,arrayUnion} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig={
+  apiKey:"AIzaSyB963nO7CsjvHiuqziZ5jnfEV5ENAtmvyo",
+  authDomain:"aavora-studio-portal.firebaseapp.com",
+  projectId:"aavora-studio-portal",
+  storageBucket:"aavora-studio-portal.firebasestorage.app",
+  messagingSenderId:"961268736791",
+  appId:"1:961268736791:web:f7d1a39474fd61953f4d52"
+};
+const fbApp=initializeApp(firebaseConfig);
+const auth=getAuth(fbApp);
+const db=getFirestore(fbApp);
+const EMAIL_DOMAIN='@aavora-portal.app';
+
+const ADMIN_LIST=[{name:"Aashita Ma'am",user:'aashita'},{name:"Avantika Ma'am",user:'avantika'},{name:'Prathamesh Sir',user:'prathamesh'}];
+const DEFAULT_CLIENTS=['Prathamesh Sir',"Avantika Ma'am","Aashita Ma'am",'Abdhesh Sir'];
+const PERMS=[['tasks','Tasks'],['breaks','Break In / Out'],['attendance','View attendance'],['leave','Apply for leave'],['report','Send attendance report']];
+const LATE_GRACE=20, LATE_CUT_PER_HOUR=200;
+const OT_MIN=30;
+const EARLY_GRACE=45, EARLY_CUT_PER_HOUR=100;
+const FIELD_LABEL={name:'Name',user:'Username',role:'Job role',contact:'Contact',salary:'Salary',joined:'Joining date',start:'Shift start',end:'Shift end',halfdayCut:'Halfday cut',absentCut:'Absent cut',otRate:'Overtime rate',leaveType:'Paid leave plan',leaveCount:'Paid leave count',perms:'Visible options',active:'Status',in:'Check in',out:'Check out',otReason:'Overtime reason'};
+
+/* ---------- helpers ---------- */
+const pad=n=>String(n).padStart(2,'0');
+const IST_MS=ms=>new Date(ms+(330+new Date(ms).getTimezoneOffset())*60000); // Date whose local fields show India time
+const now=()=>IST_MS(Date.now());
+const dkey=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
+const today=()=>dkey(now());
+const nowHM=()=>hm(now());
+const stamp=()=>today()+' '+nowHM();
+const tsHM=ts=>ts&&ts.toMillis?hm(IST_MS(ts.toMillis())):null;
+const pd=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const toMin=t=>{if(!t)return null;const[h,m]=t.split(':').map(Number);return h*60+m};
+const fromMin=m=>pad(Math.floor(m/60))+':'+pad(m%60);
+const minToHM=m=>{m=Math.max(0,Math.round(m));return Math.floor(m/60)+'h '+pad(m%60)+'m'};
+const t12=t=>{if(!t)return '–';let[h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+pad(m)+' '+ap};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rs=n=>'₹'+Math.round(Math.abs(n||0)).toLocaleString('en-IN');
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fdate=s=>{if(!s)return '–';const d=pd(s);return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()};
+const fdshort=s=>{const d=pd(s);return d.getDate()+' '+MONTHS[d.getMonth()]};
+const fmonth=m=>{const d=pd(m+'-01');return MONTHS[d.getMonth()]+' '+d.getFullYear()};
+const addDays=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return dkey(d)};
+const monthEnd=m=>dkey(new Date(+m.slice(0,4),+m.slice(5,7),0));
+function* range(from,to){let c=from;while(c<=to){yield c;c=addDays(c,1)}}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ---------- rules ---------- */
+function otUnits(min){if(min<OT_MIN)return 0;const h=Math.floor(min/60),r=min%60;if(h===0)return 0.5;if(r<30)return h;if(r<45)return h+0.5;return h+1}
+const otAmount=(min,rate)=>Math.round(otUnits(min)*rate);
+const earlyCut=min=>min<=EARLY_GRACE?0:Math.ceil((min-EARLY_GRACE)/60)*EARLY_CUT_PER_HOUR;
+const lateCut=min=>min>=60?Math.floor(min/60)*LATE_CUT_PER_HOUR:0;
+const midOf=st=>Math.round((toMin(st.start)+toMin(st.end))/2);
+const halfLabel=(st,h)=>h==='first'?'First half ('+t12(st.start)+' – '+t12(fromMin(midOf(st)))+')':'Second half ('+t12(fromMin(midOf(st)))+' – '+t12(st.end)+')';
+
+/* ---------- state ---------- */
+const emptyState=()=>({staff:[],att:{},leaves:[],tasks:[],holidays:[],clients:DEFAULT_CLIENTS.slice(),items:[],reports:[],log:[],history:[],loaded:{}});
+let S=emptyState();
+let ui={user:null,view:null,sel:null,tab:'att',month:null,modal:null,err:'',filter:{staff:'',status:''},report:null,salaryStaff:null,attStaff:null,setup:null,busy:false,boot:true};
+const staffById=id=>S.staff.find(s=>s.id===id);
+const activeStaff=()=>S.staff.filter(s=>s.active!==false);
+const isHoliday=d=>S.holidays.find(h=>h.date===d);
+const isSunday=d=>pd(d).getDay()===0;
+const rec=(sid,d)=>S.att[sid+'|'+d];
+const me=()=>ui.user.role==='staff'?staffById(ui.user.sid):{name:ui.user.name};
+const meName=()=>ui.user.name;
+
+/* ---------- firestore helpers ---------- */
+function errText(e){const c=(e&&e.code)||'';
+  if(c.includes('permission-denied'))return 'Not allowed. If this keeps happening, check that your phone\'s date and time are set to automatic.';
+  if(c.includes('unavailable'))return 'No internet connection. Please try again.';
+  if(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found')return 'Wrong username or password.';
+  if(c==='auth/too-many-requests')return 'Too many attempts. Please wait a few minutes and try again.';
+  if(c==='auth/weak-password')return 'Password must be at least 6 characters.';
+  if(c==='auth/requires-recent-login')return 'Please sign out and sign in again, then retry.';
+  return (e&&e.message)||'Something went wrong. Please try again.';}
+async function run(fn,okMsg){if(ui.busy)return;ui.busy=true;try{const r=await fn();if(okMsg)toast(okMsg);return r}catch(e){console.error(e);toast(errText(e))}finally{ui.busy=false}}
+function log(sid,txt){return addDoc(collection(db,'log'),{sid,txt,t:stamp(),ts:serverTimestamp()}).catch(e=>console.warn('log',e))}
+function addHistory(sid,changes,note){return addDoc(collection(db,'history'),{sid,at:stamp(),by:meName(),changes,note:note||'',ts:serverTimestamp()})}
+
+/* ---------- live data ---------- */
+let subs=[],monthSubs={},monthWait={};
+function clearSubs(){subs.forEach(f=>f());subs=[];Object.values(monthSubs).forEach(f=>f());monthSubs={};monthWait={}}
+const snapOpts={serverTimestamps:'estimate'};
+function listen(q,fn,key){subs.push(onSnapshot(q,snap=>{fn(snap);if(key)S.loaded[key]=true;renderSoon()},e=>{console.error(key,e);if(key)S.loaded[key]=true;renderSoon()}))}
+const docs=snap=>snap.docs.map(d=>Object.assign({id:d.id},d.data(snapOpts)));
+function startSubs(){
+  const u=ui.user;
+  listen(collection(db,'holidays'),s=>{S.holidays=docs(s)},'holidays');
+  listen(doc(db,'config','clients'),s=>{if(s.exists()&&Array.isArray(s.data().list))S.clients=s.data().list},'clients');
+  if(u.role==='admin'){
+    listen(collection(db,'staff'),s=>{S.staff=docs(s).sort((a,b)=>a.name.localeCompare(b.name))},'staff');
+    listen(collection(db,'leaves'),s=>{S.leaves=docs(s)},'leaves');
+    listen(collection(db,'tasks'),s=>{S.tasks=docs(s)},'tasks');
+    listen(collection(db,'items'),s=>{S.items=docs(s);deriveReports()},'items');
+    listen(query(collection(db,'log'),orderBy('ts','desc'),limit(400)),s=>{S.log=docs(s)},'log');
+    listen(collection(db,'history'),s=>{S.history=docs(s).sort((a,b)=>(b.at||'').localeCompare(a.at||''))},'history');
+  }else{
+    const sid=u.sid;
+    listen(doc(db,'staff',sid),s=>{S.staff=s.exists()?[Object.assign({id:s.id},s.data())]:[]},'staff');
+    listen(query(collection(db,'leaves'),where('sid','==',sid)),s=>{S.leaves=docs(s)},'leaves');
+    listen(query(collection(db,'tasks'),where('sid','==',sid)),s=>{S.tasks=docs(s)},'tasks');
+    listen(query(collection(db,'items'),where('sid','==',sid)),s=>{S.items=docs(s);deriveReports()},'items');
+  }
+  ensureMonth(today().slice(0,7));
+}
+function ensureMonth(m){
+  if(!m||!ui.user)return Promise.resolve();
+  if(monthWait[m])return monthWait[m];
+  let done;monthWait[m]=new Promise(r=>done=r);
+  const base=collection(db,'att');
+  const q=ui.user.role==='admin'?query(base,where('ym','==',m)):query(base,where('sid','==',ui.user.sid),where('ym','==',m));
+  monthSubs[m]=onSnapshot(q,snap=>{
+    for(const k of Object.keys(S.att))if(S.att[k].ym===m)delete S.att[k];
+    snap.docs.forEach(d=>{const x=d.data(snapOpts);
+      S.att[x.sid+'|'+x.date]={id:d.id,sid:x.sid,date:x.date,ym:x.ym,in:tsHM(x.inTs),out:tsHM(x.outTs),breaks:x.breaks||[],otReason:x.otReason||'',edited:x.edited||null}});
+    done();renderSoon();
+  },e=>{console.error('att',e);done();});
+  return monthWait[m];
+}
+function deriveReports(){
+  const m={};
+  for(const it of S.items){const k=it.sid+'|'+it.month;
+    const r=m[k]||(m[k]={id:k,sid:it.sid,month:it.month,from:it.date,to:it.date,sent:it.sent||'',items:[]});
+    r.items.push(it);if(it.date<r.from)r.from=it.date;if(it.date>r.to)r.to=it.date;if((it.sent||'')>r.sent)r.sent=it.sent;}
+  S.reports=Object.values(m);S.reports.forEach(r=>r.items.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0));
+}
+
+/* ---------- leave year + balance ---------- */
+function leaveYear(st,d){const j=pd(st.joined||'2026-01-01'),x=pd(d);const jm=j.getMonth();const y=x.getMonth()>=jm?x.getFullYear():x.getFullYear()-1;return{start:dkey(new Date(y,jm,1)),end:dkey(new Date(y+1,jm,0))}}
+function monthsIn(ly,d){const a=pd(ly.start),b=pd(d);return (b.getFullYear()*12+b.getMonth())-(a.getFullYear()*12+a.getMonth())+1}
+function entitlement(st){const n=+st.leaveCount||0;return st.leaveType==='yearly'?n:n*12}
+function earnedBy(st,d){const n=+st.leaveCount||0;if(st.leaveType==='yearly')return n;return n*monthsIn(leaveYear(st,d),d)}
+function paidUsedRange(sid,from,to,exceptId){let u=0;for(const l of S.leaves){if(l.sid!==sid||l.status!=='approved'||l.id===exceptId||!l.alloc)continue;for(const d in l.alloc){if(d>=from&&d<=to)u+=l.alloc[d].paid}}return u}
+function leaveDates(l){const out=[];for(const d of range(l.from,l.to)){if(!isSunday(d)&&!isHoliday(d))out.push(d)}return out}
+const leaveWeight=l=>l.type==='half'?0.5:1;
+function allocate(l){const st=staffById(l.sid);const used={};const alloc={};const w=leaveWeight(l);
+  for(const d of leaveDates(l)){const ly=leaveYear(st,d);if(used[ly.start]==null)used[ly.start]=paidUsedRange(l.sid,ly.start,ly.end,l.id);
+    const avail=Math.max(0,earnedBy(st,d)-used[ly.start]);const paid=Math.min(w,avail);used[ly.start]+=paid;alloc[d]={w,paid}}
+  return alloc}
+function leaveOn(sid,d){return S.leaves.find(l=>l.sid===sid&&l.status==='approved'&&l.alloc&&l.alloc[d])}
+function balance(st,d){const ly=leaveYear(st,d);const used=paidUsedRange(st.id,ly.start,ly.end);const earned=earnedBy(st,d);const m=d.slice(0,7);
+  return{ly,used,earned,available:Math.max(0,earned-used),total:entitlement(st),usedMonth:paidUsedRange(st.id,m+'-01',monthEnd(m))}}
+
+/* ---------- task time ---------- */
+function taskTimeOn(k,d,endT){
+  const ev=(k.hist||[]).filter(h=>h.d===d).sort((a,b)=>a.t<b.t?-1:1);let open=null,mins=0,prog=null;
+  for(const e of ev){if(e.a==='start'||e.a==='reopen'){if(open==null)open=toMin(e.t)}else if(e.a==='pause'||e.a==='done'){if(open!=null){mins+=toMin(e.t)-open;open=null}}if(e.p!=null)prog=e.p}
+  if(open!=null&&endT)mins+=Math.max(0,toMin(endT)-open);
+  return ev.length?{mins,progress:prog==null?k.progress:prog}:null}
+function tasksOnDay(sid,d,endT){const out=[];for(const k of S.tasks){if(k.sid!==sid)continue;const x=taskTimeOn(k,d,endT);if(x)out.push({title:k.title,client:k.client,mins:x.mins,progress:x.progress})}return out}
+const taskEvent=(k,a,p)=>({d:today(),t:nowHM(),a,p:p==null?k.progress:p,n:uid()});
+
+/* ---------- day calculation ---------- */
+function workedMin(r,d){if(!r||!r.in)return 0;const end=r.out||(d===today()?nowHM():null);if(!end)return 0;
+  const br=(r.breaks||[]).reduce((a,b)=>a+(b.out?toMin(b.out)-toMin(b.in):0),0);return Math.max(0,toMin(end)-toMin(r.in)-br)}
+function dayInfo(st,d){
+  const t=today();const r=rec(st.id,d);const info={date:d,rec:r};
+  if(d>t||(st.joined&&d<st.joined)){info.kind='future';return info}
+  const sun=isSunday(d),hol=isHoliday(d);
+  info.breakMin=r?(r.breaks||[]).reduce((a,b)=>a+(b.out?toMin(b.out)-toMin(b.in):0),0):0;
+  if(sun||hol){info.offName=sun?'Sunday':hol.name;
+    if(r&&r.in){info.kind='holidaywork';info.workMin=workedMin(r,d);if(!r.out){if(d<t)info.noOut=true;else info.working=true}return info}
+    info.kind=sun?'sunday':'holiday';return info}
+  const lv=leaveOn(st.id,d);
+  if(lv&&lv.type==='full'){info.kind='leave';info.leave=lv;info.paid=lv.alloc[d].paid;info.weight=1;return info}
+  const half=lv&&lv.type==='half'?lv.half:null;
+  if(lv){info.leave=lv;info.paid=lv.alloc[d].paid;info.weight=0.5;info.half=half}
+  const sMin=toMin(st.start),eMin=toMin(st.end),mid=midOf(st);
+  const effS=half==='first'?mid:sMin,effE=half==='second'?mid:eMin;info.effS=effS;info.effE=effE;
+  if(!r||!r.in){if(d===t){info.kind='notyet';return info}if(lv){info.kind='leave';info.missedHalf=true;return info}info.kind='absent';return info}
+  info.kind='present';info.lateMin=Math.max(0,toMin(r.in)-effS);info.late=info.lateMin>=LATE_GRACE;info.lateCut=lateCut(info.lateMin);
+  if(r.out){const o=toMin(r.out);if(o<effE){info.earlyMin=effE-o;info.earlyCut=earlyCut(info.earlyMin)}
+    if(half!=='second'&&o-eMin>=OT_MIN){info.otMin=o-eMin;info.otAmt=otAmount(info.otMin,+st.otRate||0)}}
+  else if(d<t)info.noOut=true;else info.working=true;
+  info.workMin=workedMin(r,d);return info}
+function statusPills(i){
+  const p=[];
+  switch(i.kind){
+    case 'future':return '<span class="muted">–</span>';
+    case 'sunday':return '<span class="pill p-mute">Sunday</span>';
+    case 'holiday':return '<span class="pill p-info">Holiday</span> <span class="small muted">'+esc(i.offName)+'</span>';
+    case 'holidaywork':return '<span class="pill p-info">Worked on '+(i.offName==='Sunday'?'Sunday':'holiday')+'</span> <span class="small muted">'+minToHM(i.workMin)+'</span>'+(i.noOut?' <span class="pill p-bad">Checkout missing</span>':'')+(i.working?' <span class="pill p-acc">Working</span>':'');
+    case 'notyet':return '<span class="pill p-mute">Not checked in yet</span>'+(i.half?' <span class="pill p-violet">Halfday</span>':'');
+    case 'absent':return '<span class="pill p-bad">Absent</span>';
+    case 'leave':if(i.weight===1)return '<span class="pill p-acc">Leave · '+(i.paid>=1?'Paid':i.paid>0?'Part paid':'Unpaid')+'</span>';
+      return '<span class="pill p-violet">Halfday · '+(i.paid>=0.5?'Paid':'Unpaid')+'</span>'+(i.missedHalf?' <span class="pill p-bad">Other half absent</span>':'');
+  }
+  p.push('<span class="pill p-ok">Present</span>');
+  if(i.half)p.push('<span class="pill p-violet">Halfday '+(i.half==='first'?'1st half':'2nd half')+' · '+(i.paid>=0.5?'Paid':'Unpaid')+'</span>');
+  if(i.late)p.push('<span class="pill p-warn">Late '+i.lateMin+'m</span>');
+  if(i.earlyMin)p.push('<span class="pill p-warn">Left '+minToHM(i.earlyMin)+' early</span>');
+  if(i.otMin)p.push('<span class="pill p-info">OT '+minToHM(i.otMin)+'</span>');
+  if(i.noOut)p.push('<span class="pill p-bad">Checkout missing</span>');
+  if(i.working)p.push('<span class="pill p-acc">Working</span>');
+  if(i.rec&&i.rec.edited)p.push('<span class="pill p-mute" title="Edited by '+esc(i.rec.edited)+'">Edited</span>');
+  return p.join(' ')}
+function monthSummary(st,month){
+  const c={present:0,late:0,lateCut:0,early:0,half:0,absent:0,holiday:0,leave:0,paidLeave:0,ot:0,hw:0};
+  for(const d of range(month+'-01',monthEnd(month))){const i=dayInfo(st,d);
+    if(i.kind==='present'){c.present++;if(i.late)c.late++;if(i.lateCut)c.lateCut++;if(i.earlyCut)c.early++;if(i.otMin)c.ot+=i.otMin}
+    else if(i.kind==='absent')c.absent++;else if(i.kind==='holiday')c.holiday++;else if(i.kind==='holidaywork')c.hw++;
+    else if(i.kind==='leave'&&i.weight===1){c.leave++;c.paidLeave+=i.paid}
+    if(i.weight===0.5){c.half++;c.paidLeave+=i.paid}}
+  return c}
+
+/* ---------- report items ---------- */
+const TYPE_LABEL={absent:'Absent','absent-half':'Absent (other half)',late:'Late (cut)',latemark:'Latemark',early:'Left early',overtime:'Overtime','leave-paid':'Paid leave','leave-unpaid':'Unpaid leave','half-paid':'Halfday (paid leave)','half-unpaid':'Halfday (unpaid)',holidaywork:'Worked on holiday',nocheckout:'Checkout missing'};
+function itemsForDay(st,d){
+  const items=[];const i=dayInfo(st,d);
+  if(i.working||i.kind==='notyet'||i.kind==='future')return items;
+  const add=(type,amt,detail,reason,extra)=>items.push(Object.assign({date:d,type,amt,detail:detail||'',reason:reason||''},extra||{}));
+  if(i.kind==='absent')add('absent',-(+st.absentCut||0),'Did not check in');
+  if(i.kind==='leave'&&i.weight===1){const unpaid=1-i.paid;
+    if(unpaid>0)add('leave-unpaid',-Math.round((+st.absentCut||0)*unpaid),'Full day leave, no paid leave balance',i.leave.reason);else add('leave-paid',0,'Full day paid leave',i.leave.reason)}
+  if(i.weight===0.5){const hl=halfLabel(st,i.leave.half);
+    if(i.paid<0.5)add('half-unpaid',-(+st.halfdayCut||0),hl+', no paid leave balance',i.leave.reason);else add('half-paid',0,hl,i.leave.reason);
+    if(i.missedHalf)add('absent-half',-(+st.halfdayCut||0),'Did not check in for the other half')}
+  if(i.kind==='holidaywork'){const r=i.rec;add('holidaywork',0,i.offName+' · In '+t12(r.in)+' – Out '+(r.out?t12(r.out):'missing')+' · '+minToHM(i.workMin)+' worked','',{tasks:tasksOnDay(st.id,d,r.out)})}
+  if(i.kind==='present'){const r=i.rec;
+    if(i.lateCut)add('late',-i.lateCut,'In '+t12(r.in)+' · '+minToHM(i.lateMin)+' late');else if(i.late)add('latemark',0,'In '+t12(r.in)+' · '+i.lateMin+' min late');
+    if(i.earlyMin)add('early',-i.earlyCut,'Out '+t12(r.out)+' · '+minToHM(i.earlyMin)+' before '+t12(fromMin(i.effE)));
+    if(i.otMin)add('overtime',i.otAmt,'Out '+t12(r.out)+' · '+minToHM(i.otMin)+' extra · paid as '+otUnits(i.otMin)+' hr',r.otReason);
+    if(i.noOut)add('nocheckout',0,'In '+t12(r.in)+', no checkout')}
+  return items}
+function reportedDates(sid){const s=new Set();for(const it of S.items)if(it.sid===sid)s.add(it.date);return s}
+function buildItems(st,from,to){const done=reportedDates(st.id);const out=[];for(const d of range(from,to)){if(done.has(d))continue;out.push(...itemsForDay(st,d))}return out}
+const needsDecision=it=>it.amt!==0||it.type==='holidaywork';
+function estimate(st,it){const x=itemsForDay(st,it.date).find(y=>y.type===it.type);return x?x.amt:(it.est||0)}
+function salaryFor(st,month){
+  const items=S.items.filter(it=>it.sid===st.id&&it.month===month).map(it=>Object.assign({},it,{amt:it.decision==='approved'?(it.amt||0):estimate(st,it)})).sort((a,b)=>a.date<b.date?-1:1);
+  let cut=0,add=0,hw=0,pendCut=0,pendAdd=0,pending=0;
+  for(const it of items){if(it.decision==='approved'){if(it.amt<0)cut+=-it.amt;else if(it.type==='holidaywork')hw+=it.amt;else add+=it.amt}
+    if(it.decision==='pending'){pending++;if(it.amt<0)pendCut+=-it.amt;else pendAdd+=it.amt}}
+  const base=+st.salary||0;return{items,cut,add,hw,pendCut,pendAdd,pending,base,net:base-cut+add+hw}}
+function unreported(st,month){const t=today();const end=monthEnd(month)<t?monthEnd(month):addDays(t,-1);if(end<month+'-01')return[];
+  return buildItems(st,month+'-01',end).filter(needsDecision)}
+
+/* ---------- history ---------- */
+function fmtField(k,v){
+  if(v==null||v==='')return '–';
+  if(k==='perms')return PERMS.filter(([p])=>v[p]).map(x=>x[1]).join(', ')||'None';
+  if(['salary','halfdayCut','absentCut'].includes(k))return rs(v);
+  if(k==='otRate')return rs(v)+'/hr';
+  if(k==='start'||k==='end'||k==='in'||k==='out')return t12(v);
+  if(k==='joined')return fdate(v);
+  if(k==='leaveType')return v==='yearly'?'Yearly':'Monthly';
+  if(k==='active')return v===false?'Inactive':'Active';
+  return String(v)}
+
+/* ---------- render ---------- */
+const app=document.getElementById('app');
+let rafPending=false;
+function renderSoon(){if(rafPending)return;rafPending=true;requestAnimationFrame(()=>{rafPending=false;render(true)})}
+function render(preserve){
+  const y=window.scrollY;const saved={};let focusId=null,selS=null,selE=null;
+  if(preserve){document.querySelectorAll('#app input[id],#app textarea[id],#app select[id]').forEach(el=>{saved[el.id]=el.type==='checkbox'?{c:el.checked}:{v:el.value}});
+    const a=document.activeElement;if(a&&a.id&&saved[a.id]){focusId=a.id;try{selS=a.selectionStart;selE=a.selectionEnd}catch(e){}}}
+  let html;
+  if(ui.boot)html='<div class="login"><div class="login-box">'+brandHtml('Portal')+'<p class="muted">Loading…</p></div></div>';
+  else if(ui.setup)html=setupView();
+  else html=ui.user?shell():loginView();
+  app.innerHTML=html+(ui.modal?'<div class="modal-bg" data-act="closeBg"><div class="modal" role="dialog" aria-modal="true">'+ui.modal()+'</div></div>':'')+(ui.toast?'<div class="toast" role="status">'+esc(ui.toast)+'</div>':'');
+  if(preserve){for(const id in saved){const el=document.getElementById(id);if(!el)continue;if('c' in saved[id])el.checked=saved[id].c;else if(el.value!==saved[id].v)el.value=saved[id].v}
+    syncLeaveForm();syncClientSel();
+    if(focusId){const el=document.getElementById(focusId);if(el){el.focus();try{if(selS!=null)el.setSelectionRange(selS,selE)}catch(e){}}}}
+  window.scrollTo(0,y)}
+let toastT;function toast(m){ui.toast=m;render(true);clearTimeout(toastT);toastT=setTimeout(()=>{ui.toast=null;render(true)},2800)}
+const brandHtml=sub=>'<div class="brand"><i>AS</i><div><b>Aavora Studio</b><small>'+sub+'</small></div></div>';
+const loadingBox='<div class="empty">Loading…</div>';
+
+function setupView(){
+  return '<div class="login"><div class="login-box">'+brandHtml('First-time setup')+
+  '<form class="panel" data-form="setup"><div><h2>Create admin accounts</h2><p class="muted small" style="margin:4px 0 0">This screen appears only once. Set a password (at least 6 characters) for each admin. Keep these passwords private.</p></div>'+
+  ADMIN_LIST.map((a,i)=>'<fieldset style="border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px"><legend class="small" style="font-weight:700;padding:0 6px">'+esc(a.name)+' · username <span class="mono">'+a.user+'</span></legend><label class="f">Password<input id="su-p'+i+'" name="p'+i+'" type="password" minlength="6" required autocomplete="new-password"></label><label class="f">Confirm password<input id="su-c'+i+'" name="c'+i+'" type="password" minlength="6" required autocomplete="new-password"></label></fieldset>').join('')+
+  (ui.err?'<div class="note warn">'+esc(ui.err)+'</div>':'')+
+  '<button class="btn primary big" type="submit"'+(ui.busy?' disabled':'')+'>'+(ui.busy?'Creating…':'Create admin accounts')+'</button></form></div></div>'}
+
+function loginView(){
+  return '<div class="login"><div class="login-box">'+brandHtml('Portal')+
+  '<form class="panel" data-form="login"><div><h2>Sign in</h2><p class="muted small" style="margin:4px 0 0">Staff accounts are created by the admins only.</p></div>'+
+  '<label class="f">Username<input id="lu" name="u" autocomplete="username" autocapitalize="none" required></label>'+
+  '<label class="f">Password<input id="lp" name="p" type="password" autocomplete="current-password" required></label>'+
+  (ui.err?'<div class="note warn">'+esc(ui.err)+'</div>':'')+
+  '<button class="btn primary big" type="submit"'+(ui.busy?' disabled':'')+'>'+(ui.busy?'Signing in…':'Sign in')+'</button>'+
+  '<p class="small muted" style="margin:0">Forgot your password? Ask an admin to reset it.</p></form></div></div>'}
+
+function navItems(){
+  if(ui.user.role==='admin'){
+    const pl=S.leaves.filter(l=>l.status==='pending').length;
+    const pr=S.items.filter(i=>i.decision==='pending').length;
+    return[['dash','Dashboard'],['staff','Staff'],['att','Attendance'],['tasks','Tasks'],['leaves','Leave Requests',pl],['salary','Salary',pr],['holidays','Holidays'],['profile','Account']];
+  }
+  const p=(me()&&me().perms)||{};const n=[['home','Today']];
+  if(p.tasks)n.push(['tasks','Tasks']);if(p.attendance)n.push(['att','Attendance']);if(p.leave)n.push(['leave','Leave']);if(p.report)n.push(['report','Send Report']);n.push(['profile','Profile']);
+  return n}
+function shell(){
+  const sub=ui.user.role==='admin'?'Admin Portal':'Staff Portal';
+  const ready=ui.user.role==='admin'?S.loaded.staff:S.loaded.staff&&me();
+  if(ui.user.role==='staff'&&S.loaded.staff&&!me())return '<div class="login"><div class="login-box">'+brandHtml(sub)+'<div class="note warn">Your staff profile could not be found. Please contact an admin.</div><button class="btn" data-act="logout">Sign out</button></div></div>';
+  const items=ready?navItems():[];if(ready&&!items.find(i=>i[0]===ui.view))ui.view=items[0][0];
+  const nav=items.map(([k,l,b])=>'<button class="'+(ui.view===k?'on':'')+'" data-act="nav" data-v="'+k+'">'+l+(b?'<span class="badge">'+b+'</span>':'')+'</button>').join('');
+  const m=ready?me():{name:ui.user.name,role:''};
+  return '<div class="shell"><aside class="side"><div class="mobile-who">'+brandHtml(sub)+'<button class="btn sm" data-act="logout">Sign out</button></div>'+
+  brandHtml(sub)+'<nav class="nav" aria-label="Main">'+nav+'</nav>'+
+  '<div class="who"><div><b>'+esc(m.name)+'</b><div class="small muted">'+(ui.user.role==='admin'?'Admin':esc(m.role))+'</div></div><button class="btn sm" data-act="logout">Sign out</button></div></aside>'+
+  '<main class="main"><div class="main-in">'+(ready?view():loadingBox)+'</div></main></div>'}
+function view(){
+  const v=ui.view;
+  if(ui.user.role==='admin'){if(v==='dash')return aDash();if(v==='staff')return ui.sel?aStaffDetail():aStaff();if(v==='att')return attView(true);if(v==='tasks')return tasksView(true);if(v==='leaves')return aLeaves();if(v==='salary')return aSalary();if(v==='holidays')return aHolidays();if(v==='profile')return profileView()}
+  else{if(v==='home')return sHome();if(v==='tasks')return tasksView(false);if(v==='att')return attView(false);if(v==='leave')return sLeave();if(v==='report')return sReport();if(v==='profile')return profileView()}
+  return ''}
+const head=(t,sub,right)=>'<div class="spread"><div><h1>'+t+'</h1>'+(sub?'<p class="muted" style="margin:4px 0 0">'+sub+'</p>':'')+'</div>'+(right||'')+'</div>';
+const stat=(n,l)=>'<div class="stat"><b>'+n+'</b><span>'+l+'</span></div>';
+const curMonth=()=>{const m=ui.month||today().slice(0,7);ensureMonth(m);return m};
+
+/* ---------- admin: dashboard ---------- */
+function liveStatus(st){
+  const t=today();const r=rec(st.id,t);const i=dayInfo(st,t);
+  if(i.kind==='future')return{p:'<span class="pill p-mute">Joins '+fdshort(st.joined)+'</span>',k:'off'};
+  if(i.kind==='sunday'||i.kind==='holiday')return{p:'<span class="pill p-info">'+esc(i.offName)+'</span>',k:'off'};
+  if(i.kind==='leave')return{p:'<span class="pill p-acc">On leave</span>',k:'leave'};
+  if(!r||!r.in)return{p:'<span class="pill p-mute">Not checked in</span>'+(i.half?' <span class="pill p-violet">Halfday</span>':''),k:'out'};
+  const br=(r.breaks||[]).find(b=>!b.out);
+  let p=br?'<span class="pill p-warn">On break since '+t12(br.in)+'</span>':r.out?'<span class="pill p-mute">Checked out '+t12(r.out)+'</span>':'<span class="pill p-ok">Working · In '+t12(r.in)+'</span>';
+  if(i.kind==='holidaywork')p+=' <span class="pill p-info">Holiday work</span>';
+  if(i.late)p+=' <span class="pill p-warn">Late '+i.lateMin+'m</span>';
+  if(i.half)p+=' <span class="pill p-violet">Halfday</span>';
+  return{p,k:br?'break':'in',late:i.late}}
+function aDash(){
+  const t=today();const ls=activeStaff().map(s=>({s,l:liveStatus(s)}));
+  const inC=ls.filter(x=>x.l.k==='in'||x.l.k==='break').length,brC=ls.filter(x=>x.l.k==='break').length,lateC=ls.filter(x=>x.l.late).length,outC=ls.filter(x=>x.l.k==='out').length;
+  const pl=S.leaves.filter(l=>l.status==='pending');
+  const pr=S.reports.filter(r=>r.items.some(i=>i.decision==='pending'));
+  const recent=S.log.slice(0,8).map(l=>'<div><b>'+esc((staffById(l.sid)||{}).name||'')+'</b> · '+esc(l.txt)+'<div class="small muted mono">'+esc(l.t)+'</div></div>').join('');
+  return head('Hello, '+esc(meName()),fdate(t)+', '+DAYS[pd(t).getDay()])+
+  (S.staff.length?'':'<div class="note">Welcome! Start by adding your staff from the Staff page. Each new staff member gets the password 123456.</div>')+
+  '<div class="grid g3">'+stat(inC,'Checked in today')+stat(lateC,'Came late')+stat(brC,'On break now')+stat(outC,'Not checked in')+'</div>'+
+  (ls.length?'<section class="stack"><h2>Today</h2><div class="cards">'+ls.map(({s,l})=>'<button class="card" style="text-align:left" data-act="openStaff" data-id="'+s.id+'"><div class="spread"><b>'+esc(s.name)+'</b><span class="small muted">'+esc(s.role)+'</span></div><div class="row" style="gap:6px">'+l.p+'</div><div class="small muted">Shift '+t12(s.start)+' – '+t12(s.end)+' · '+S.tasks.filter(x=>x.sid===s.id&&x.status!=='done').length+' open tasks</div></button>').join('')+'</div></section>':'')+
+  '<div class="grid g2"><section class="panel stack"><h3>Waiting for approval</h3>'+
+  (pl.length||pr.length?(pl.map(l=>'<div class="spread"><span><b>'+esc((staffById(l.sid)||{}).name||'?')+'</b> · leave '+fdshort(l.from)+(l.to!==l.from?' – '+fdshort(l.to):'')+'</span><button class="btn sm" data-act="nav" data-v="leaves">Review</button></div>').join('')+
+  pr.map(r=>'<div class="spread"><span><b>'+esc((staffById(r.sid)||{}).name||'?')+'</b> · report for '+fmonth(r.month)+'</span><button class="btn sm" data-act="goSalary" data-id="'+r.sid+'" data-m="'+r.month+'">Review</button></div>').join('')):'<p class="muted" style="margin:0">Nothing pending.</p>')+
+  '</section><section class="panel stack"><h3>Recent activity</h3><div class="timeline">'+(recent||'<p class="muted">No activity yet.</p>')+'</div></section></div>'}
+
+/* ---------- admin: staff ---------- */
+function aStaff(){
+  return head('Staff',activeStaff().length+' active'+(S.staff.length>activeStaff().length?' · '+(S.staff.length-activeStaff().length)+' inactive':''),'<button class="btn primary" data-act="staffForm">+ Add staff</button>')+
+  (S.staff.length?'<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Role</th><th>Contact</th><th>Shift</th><th class="num">Salary</th><th>Paid leave</th><th>Today</th></tr></thead><tbody>'+
+  S.staff.map(s=>'<tr class="click" data-act="openStaff" data-id="'+s.id+'"><td><b>'+esc(s.name)+'</b><div class="small muted">@'+esc(s.user)+' · joined '+fdshort(s.joined)+'</div></td><td>'+esc(s.role)+'</td><td class="mono">'+esc(s.contact)+'</td><td class="mono">'+t12(s.start)+' – '+t12(s.end)+'</td><td class="num">'+rs(s.salary)+'</td><td>'+s.leaveCount+' / '+(s.leaveType==='yearly'?'year':'month')+'</td><td>'+(s.active===false?'<span class="pill p-mute">Inactive</span>':liveStatus(s).p)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">No staff yet. Use “Add staff” to create the first account.</div>')}
+function staffFormModal(id){
+  const s=id?staffById(id):{name:'',user:'',role:'',contact:'',salary:'',joined:today(),start:'11:00',end:'19:00',halfdayCut:'',absentCut:'',otRate:'',leaveType:'monthly',leaveCount:1,perms:{tasks:1,breaks:1,attendance:1,leave:1,report:1},active:true};
+  ui.modal=()=>'<form class="stack" data-form="staff" data-id="'+(id||'')+'"><div class="spread"><h2>'+(id?'Edit staff':'New staff')+'</h2><button type="button" class="btn sm" data-act="close">Close</button></div>'+
+  (id?'<p class="small muted" style="margin:0">Every change is saved in Change history with your name. Old values are never deleted.</p>':'')+
+  '<div class="grid g2"><label class="f">Name<input id="sf-name" name="name" required value="'+esc(s.name)+'"></label><label class="f">Username (for sign in)<input id="sf-user" name="user" required value="'+esc(s.user)+'" pattern="[a-zA-Z0-9._\\-]+" autocapitalize="none"></label>'+
+  '<label class="f">Job role<input id="sf-role" name="role" required value="'+esc(s.role)+'"></label><label class="f">Contact<input id="sf-contact" name="contact" value="'+esc(s.contact)+'"></label>'+
+  '<label class="f">Salary (₹ per month)<input id="sf-salary" name="salary" type="number" min="0" required value="'+esc(s.salary)+'"></label><label class="f">Joining date<input id="sf-joined" name="joined" type="date" required value="'+esc(s.joined)+'"></label>'+
+  '<label class="f">Shift start<input id="sf-start" name="start" type="time" required value="'+esc(s.start)+'"></label><label class="f">Shift end<input id="sf-end" name="end" type="time" required value="'+esc(s.end)+'"></label>'+
+  '<label class="f">Halfday cut (₹)<input id="sf-half" name="halfdayCut" type="number" min="0" required value="'+esc(s.halfdayCut)+'"></label><label class="f">Absent cut (₹)<input id="sf-abs" name="absentCut" type="number" min="0" required value="'+esc(s.absentCut)+'"></label>'+
+  '<label class="f">Overtime (₹ per hour)<input id="sf-ot" name="otRate" type="number" min="0" required value="'+esc(s.otRate)+'"></label><span></span>'+
+  '<label class="f">Paid leave plan<select id="sf-lt" name="leaveType"><option value="monthly" '+(s.leaveType==='monthly'?'selected':'')+'>Monthly</option><option value="yearly" '+(s.leaveType==='yearly'?'selected':'')+'>Yearly</option></select></label>'+
+  '<label class="f">Paid leaves<input id="sf-lc" name="leaveCount" type="number" min="0" step="0.5" required value="'+esc(s.leaveCount)+'"></label></div>'+
+  '<p class="small muted" style="margin:-4px 0 0">Unused paid leave carries forward until the end of the leave year: 12 months starting from the 1st of the joining month.</p>'+
+  '<fieldset style="border:1px solid var(--line);border-radius:10px;padding:12px"><legend class="small muted" style="font-weight:700;padding:0 6px">What this staff member can see</legend><div class="grid g2" style="gap:8px">'+
+  PERMS.map(([k,l])=>'<label class="row" style="gap:8px"><input type="checkbox" id="sf-p-'+k+'" name="p_'+k+'" style="width:auto" '+(s.perms&&s.perms[k]?'checked':'')+'> '+l+'</label>').join('')+'</div><p class="small muted" style="margin:8px 0 0">Check In / Check Out is always visible.</p></fieldset>'+
+  (id?'<div class="note">Staff forgot the password? <button type="button" class="btn sm" data-act="resetPwAsk" data-id="'+id+'">Reset password to 123456</button></div>':'<div class="note">The starting password will be <b class="mono">123456</b>. Staff should change it from Profile after signing in. Nobody, including admins, can see a staff member\'s password.</div>')+
+  '<div class="row" style="justify-content:space-between">'+(id?(s.active===false?'<button type="button" class="btn ok" data-act="activate" data-id="'+id+'">Reactivate</button>':'<button type="button" class="btn bad" data-act="deactivateAsk" data-id="'+id+'">Deactivate</button>'):'<span></span>')+'<button class="btn primary" type="submit"'+(ui.busy?' disabled':'')+'>'+(id?'Save changes':'Create staff')+'</button></div></form>';
+  render()}
+function historyTable(sid){
+  const h=S.history.filter(x=>x.sid===sid);
+  if(!h.length)return '<div class="empty">No changes recorded yet.</div>';
+  const rows=[];
+  for(const e of h){const ch=e.changes||[];
+    if(!ch.length){rows.push('<tr><td class="mono">'+esc(e.at)+'</td><td>'+esc(e.by)+'</td><td colspan="3">'+esc(e.note)+'</td></tr>');continue}
+    ch.forEach((c,k)=>rows.push('<tr>'+(k===0?'<td class="mono" rowspan="'+ch.length+'">'+esc(e.at)+'</td><td rowspan="'+ch.length+'">'+esc(e.by)+(e.note?'<div class="small muted">'+esc(e.note)+'</div>':'')+'</td>':'')+'<td><b>'+(FIELD_LABEL[c.field]||c.field)+'</b></td><td class="minus">'+esc(fmtField(c.field,c.old))+'</td><td class="plus">'+esc(fmtField(c.field,c.new))+'</td></tr>'))}
+  return '<div class="tbl-wrap"><table><thead><tr><th>When</th><th>Changed by</th><th>Field</th><th>Old value</th><th>New value</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div>'}
+function aStaffDetail(){
+  const s=staffById(ui.sel);if(!s){ui.sel=null;return aStaff()}
+  const month=curMonth();const sum=monthSummary(s,month);const b=balance(s,today());
+  const tabs=[['att','Attendance'],['tasks','Tasks'],['leaves','Leaves'],['history','Change history'],['activity','Activity']];
+  let body='';
+  if(ui.tab==='att')body=monthPicker()+attTable(s,month,true);
+  if(ui.tab==='tasks')body=taskList(S.tasks.filter(t=>t.sid===s.id),true);
+  if(ui.tab==='leaves')body=leaveTable(S.leaves.filter(l=>l.sid===s.id),true);
+  if(ui.tab==='history')body=historyTable(s.id);
+  if(ui.tab==='activity'){const l=S.log.filter(x=>x.sid===s.id).slice(0,80);body=l.length?'<div class="timeline">'+l.map(x=>'<div>'+esc(x.txt)+'<div class="small muted mono">'+esc(x.t)+'</div></div>').join('')+'</div>':'<div class="empty">No activity yet.</div>'}
+  return '<div class="row"><button class="btn sm" data-act="back">← All staff</button></div>'+
+  head(esc(s.name)+(s.active===false?' <span class="pill p-mute" style="vertical-align:middle">Inactive</span>':''),esc(s.role)+' · '+esc(s.contact)+' · @'+esc(s.user)+' · Shift '+t12(s.start)+' – '+t12(s.end)+' · Joined '+fdate(s.joined),'<div class="row"><button class="btn" data-act="goSalary" data-id="'+s.id+'" data-m="'+month+'">View salary</button><button class="btn primary" data-act="staffForm" data-id="'+s.id+'">Edit</button></div>')+
+  '<div class="grid g3">'+stat(rs(s.salary),'Salary')+stat(rs(s.halfdayCut)+' / '+rs(s.absentCut),'Halfday / Absent cut')+stat(rs(s.otRate)+'/hr','Overtime rate')+stat(b.available+' left','Paid leave · '+fdshort(b.ly.start)+' – '+fdshort(b.ly.end))+'</div>'+
+  summaryStrip(sum,month)+
+  '<div class="tabs" role="tablist">'+tabs.map(([k,l])=>'<button class="'+(ui.tab===k?'on':'')+'" data-act="tab" data-t="'+k+'">'+l+'</button>').join('')+'</div>'+body}
+function summaryStrip(c,month){
+  return '<div class="panel"><h3 style="margin-bottom:10px">'+fmonth(month)+' summary</h3><div class="row" style="gap:8px">'+
+  '<span class="pill p-ok">Present '+c.present+'</span><span class="pill p-warn">Latemark '+c.late+'</span><span class="pill p-warn">Late with cut '+c.lateCut+'</span><span class="pill p-warn">Left early (cut) '+c.early+'</span><span class="pill p-violet">Halfday '+c.half+'</span><span class="pill p-bad">Absent '+c.absent+'</span><span class="pill p-acc">Leave '+c.leave+'</span><span class="pill p-acc">Paid leave used '+c.paidLeave+'</span><span class="pill p-info">Holiday '+c.holiday+'</span><span class="pill p-info">Worked on holiday '+c.hw+'</span><span class="pill p-info">Overtime '+minToHM(c.ot)+'</span></div></div>'}
+function monthPicker(){return '<div class="row"><label class="f" style="flex-direction:row;align-items:center;gap:8px">Month<input type="month" id="monthPick" value="'+(ui.month||today().slice(0,7))+'" data-chg="month" style="width:auto"></label></div>'}
+function attTable(s,month,admin){
+  const rows=[];
+  for(const d of range(month+'-01',monthEnd(month))){const i=dayInfo(s,d);if(i.kind==='future')continue;const r=i.rec||{};
+    const cut=(i.lateCut||0)+(i.earlyCut||0);const tasks=i.kind==='holidaywork'?tasksOnDay(s.id,d,r.out):[];
+    rows.push('<tr class="'+(i.kind==='sunday'||i.kind==='holiday'?'sun':i.kind==='holidaywork'?'hw':'')+'"><td class="mono">'+fdshort(d)+'</td><td>'+DAYS[pd(d).getDay()]+'</td><td class="mono">'+(r.in?t12(r.in):'–')+'</td><td class="mono">'+(r.out?t12(r.out):'–')+'</td><td class="mono">'+(i.breakMin?minToHM(i.breakMin):'–')+'</td><td>'+statusPills(i)+
+    (tasks.length?'<ul class="tasklist">'+tasks.map(k=>'<li>'+esc(k.title)+' · '+minToHM(k.mins)+' · '+k.progress+'%</li>').join('')+'</ul>':'')+'</td><td class="num">'+(cut?'<span class="minus">−'+rs(cut)+'</span>':'–')+'</td><td class="num">'+(i.otAmt?'<span class="plus">+'+rs(i.otAmt)+'</span>':'–')+'</td><td class="small">'+esc(r.otReason||'')+'</td>'+(admin?'<td><button class="btn sm" data-act="attEdit" data-id="'+s.id+'" data-d="'+d+'">Edit</button></td>':'')+'</tr>')}
+  rows.reverse();
+  if(!monthWait[month])return loadingBox;
+  return rows.length?'<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Day</th><th>In</th><th>Out</th><th>Break</th><th>Status</th><th class="num">Est. cut</th><th class="num">Est. OT</th><th>Overtime reason</th>'+(admin?'<th></th>':'')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div><p class="small muted" style="margin:0">Estimated amounts apply only after the staff member sends the report and an admin approves them.</p>':'<div class="empty">No records for this month.</div>'}
+function attEditModal(sid,d){
+  const s=staffById(sid);const r=rec(sid,d)||{};
+  ui.modal=()=>'<form class="stack" data-form="attEdit" data-id="'+sid+'" data-d="'+d+'"><div class="spread"><h2>Edit attendance</h2><button type="button" class="btn sm" data-act="close">Close</button></div>'+
+  '<p class="muted" style="margin:0">'+esc(s.name)+' · '+fdate(d)+'. The change is saved in Change history with your name.</p>'+
+  '<div class="grid g2"><label class="f">Check in<input id="ae-in" name="in" type="time" value="'+esc(r.in||'')+'"></label><label class="f">Check out<input id="ae-out" name="out" type="time" value="'+esc(r.out||'')+'"></label></div>'+
+  '<label class="f">Overtime reason<textarea id="ae-ot" name="ot" rows="2">'+esc(r.otReason||'')+'</textarea></label>'+
+  '<label class="f">Why are you changing this?<input id="ae-note" name="note" required placeholder="e.g. Forgot to check out, confirmed with staff"></label>'+
+  '<div class="row" style="justify-content:space-between">'+(r.in?'<button type="button" class="btn bad" data-act="attDelAsk" data-id="'+sid+'" data-d="'+d+'">Remove record</button>':'<span></span>')+'<button class="btn primary" type="submit">Save</button></div></form>';
+  render()}
+
+/* ---------- attendance view ---------- */
+function attView(admin){
+  const month=curMonth();
+  if(admin){
+    const list=activeStaff();if(!list.length)return head('Attendance')+'<div class="empty">Add staff first.</div>';
+    const sid=ui.attStaff&&staffById(ui.attStaff)?ui.attStaff:list[0].id;ui.attStaff=sid;const s=staffById(sid);
+    const overview='<div class="tbl-wrap"><table><thead><tr><th>Staff</th><th class="num">Present</th><th class="num">Latemark</th><th class="num">Left early</th><th class="num">Halfday</th><th class="num">Absent</th><th class="num">Leave</th><th class="num">Holiday</th><th class="num">Holiday work</th><th class="num">Overtime</th></tr></thead><tbody>'+
+      list.map(x=>{const c=monthSummary(x,month);return '<tr class="click" data-act="attStaff" data-id="'+x.id+'"><td><b>'+esc(x.name)+'</b>'+(x.id===sid?' <span class="pill p-acc">selected</span>':'')+'</td><td class="num">'+c.present+'</td><td class="num">'+c.late+'</td><td class="num">'+c.early+'</td><td class="num">'+c.half+'</td><td class="num">'+c.absent+'</td><td class="num">'+c.leave+'</td><td class="num">'+c.holiday+'</td><td class="num">'+c.hw+'</td><td class="num">'+minToHM(c.ot)+'</td></tr>'}).join('')+'</tbody></table></div>';
+    return head('Attendance','Click a staff member to see their day-by-day record')+monthPicker()+overview+'<h2>'+esc(s.name)+'</h2>'+attTable(s,month,true)}
+  const s=me();
+  return head('My attendance','Shift '+t12(s.start)+' – '+t12(s.end))+monthPicker()+summaryStrip(monthSummary(s,month),month)+attTable(s,month,false)}
+
+/* ---------- tasks ---------- */
+const TS={new:['Not started','p-mute'],started:['In progress','p-acc'],paused:['Paused','p-warn'],done:['Complete','p-ok']};
+function taskList(list,admin){
+  if(!list.length)return '<div class="empty">No tasks yet.</div>';
+  const t=today();list=list.slice().sort((a,b)=>(a.status==='done')-(b.status==='done')||(a.due<b.due?-1:1));
+  return '<div class="cards">'+list.map(k=>{const s=staffById(k.sid);const over=k.status!=='done'&&k.due<t;let actions='';
+    if(k.status==='new')actions='<button class="btn sm primary" data-act="tStart" data-id="'+k.id+'">Start</button>';
+    else if(k.status==='started')actions='<button class="btn sm" data-act="tPause" data-id="'+k.id+'">Pause</button><button class="btn sm ok" data-act="tDone" data-id="'+k.id+'">Complete</button>';
+    else if(k.status==='paused')actions='<button class="btn sm primary" data-act="tStart" data-id="'+k.id+'">Resume</button><button class="btn sm ok" data-act="tDone" data-id="'+k.id+'">Complete</button>';
+    else actions='<button class="btn sm" data-act="tReopen" data-id="'+k.id+'">Reopen</button>';
+    if(admin)actions+='<button class="btn sm bad" data-act="tDelAsk" data-id="'+k.id+'">Delete</button>';
+    return '<div class="card"><div class="spread"><span class="pill '+TS[k.status][1]+'">'+TS[k.status][0]+'</span><span class="small '+(over?'minus':'muted')+'">Due '+fdshort(k.due)+(over?' · overdue':'')+'</span></div><b>'+esc(k.title)+'</b>'+
+    '<div class="small muted">For: <b style="color:var(--ink)">'+esc(k.client)+'</b>'+(admin?' · '+esc(s?s.name:'?'):'')+(k.by&&k.by!=='Self'?' · '+esc(k.by):'')+'</div>'+
+    '<div class="row" style="gap:8px"><div class="bar" style="flex:1"><i style="width:'+k.progress+'%"></i></div><span class="mono small">'+k.progress+'%</span></div><div class="row" style="gap:6px">'+actions+'</div></div>'}).join('')+'</div>'}
+function tasksView(admin){
+  let list=S.tasks;if(!admin)list=list.filter(t=>t.sid===ui.user.sid);
+  const f=ui.filter;if(admin&&f.staff)list=list.filter(t=>t.sid===f.staff);if(f.status)list=list.filter(t=>t.status===f.status);
+  const filters='<div class="row">'+(admin?'<select id="fStaff" data-chg="fStaff" style="width:auto"><option value="">All staff</option>'+S.staff.map(s=>'<option value="'+s.id+'" '+(f.staff===s.id?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select>':'')+
+  '<select id="fStatus" data-chg="fStatus" style="width:auto"><option value="">All statuses</option>'+Object.entries(TS).map(([k,v])=>'<option value="'+k+'" '+(f.status===k?'selected':'')+'>'+v[0]+'</option>').join('')+'</select></div>';
+  return head(admin?'Tasks':'My tasks',admin?'Staff add their own tasks every day. You can also assign a task to anyone.':'Add your work for the day and keep the progress updated','<button class="btn primary" data-act="taskForm">'+(admin?'+ Assign task':'+ Add task')+'</button>')+filters+(S.loaded.tasks?taskList(list,admin):loadingBox)}
+function taskFormModal(){
+  const admin=ui.user.role==='admin';
+  ui.modal=()=>'<form class="stack" data-form="task"><div class="spread"><h2>'+(admin?'Assign task':'New task')+'</h2><button type="button" class="btn sm" data-act="close">Close</button></div>'+
+  '<label class="f">Task<textarea id="tk-title" name="title" required placeholder="e.g. Design the Diwali offer poster"></textarea></label>'+
+  '<div class="grid g2"><label class="f">Whose work is it<select id="tk-client" name="client" data-chg="clientSel">'+S.clients.map(c=>'<option>'+esc(c)+'</option>').join('')+'<option value="__new">+ Add new client</option></select></label>'+
+  '<label class="f" id="newClientWrap" hidden>New client name<input id="tk-newclient" name="newClient"></label>'+
+  '<label class="f">Due date<input id="tk-due" name="due" type="date" required value="'+today()+'"></label>'+
+  (admin?'<label class="f">Assign to<select id="tk-staff" name="sid" required>'+activeStaff().map(s=>'<option value="'+s.id+'">'+esc(s.name)+' · '+esc(s.role)+'</option>').join('')+'</select></label>':'')+
+  '</div><button class="btn primary" type="submit">'+(admin?'Assign':'Add task')+'</button></form>';
+  render()}
+function pauseModal(id){const k=S.tasks.find(t=>t.id===id);
+  ui.modal=()=>'<div class="stack"><div class="spread"><h2>How much is done?</h2><button class="btn sm" data-act="close">Close</button></div><p class="muted" style="margin:0">'+esc(k.title)+'</p>'+
+  '<div class="grid g3">'+[20,50,70,90].map(p=>'<button class="btn big '+(k.progress===p?'primary':'')+'" data-act="tPauseAt" data-id="'+id+'" data-p="'+p+'">'+p+'%</button>').join('')+'</div></div>';render()}
+
+/* ---------- leaves ---------- */
+function leaveTable(list,admin){
+  if(!list.length)return '<div class="empty">No leave requests.</div>';
+  list=list.slice().sort((a,b)=>(a.status==='pending'?0:1)-(b.status==='pending'?0:1)||(a.from<b.from?1:-1));
+  return '<div class="tbl-wrap"><table><thead><tr>'+(admin?'<th>Staff</th>':'')+'<th>Dates</th><th>Type</th><th>Reason</th><th>Status</th>'+(admin?'<th></th>':'')+'</tr></thead><tbody>'+
+  list.map(l=>{const s=staffById(l.sid)||{start:'11:00',end:'19:00'};const days=leaveDates(l).length*leaveWeight(l);
+    const paid=l.alloc?Object.values(l.alloc).reduce((a,x)=>a+x.paid,0):null;
+    const st=l.status==='pending'?'<span class="pill p-warn">Waiting for approval</span>':l.status==='approved'?'<span class="pill p-ok">Approved</span><div class="small muted">'+paid+' paid · '+(days-paid)+' unpaid</div>':'<span class="pill p-bad">Not approved</span>';
+    return '<tr>'+(admin?'<td><b>'+esc(s.name||'?')+'</b></td>':'')+'<td class="mono">'+fdshort(l.from)+(l.to!==l.from?' – '+fdshort(l.to):'')+'<div class="small muted">'+days+' day'+(days===1?'':'s')+'</div></td><td>'+(l.type==='half'?'Halfday<div class="small muted">'+esc(halfLabel(s,l.half))+'</div>':'Full day')+'</td><td>'+esc(l.reason)+'</td><td>'+st+(l.by?'<div class="small muted">by '+esc(l.by)+'</div>':'')+'</td>'+
+    (admin?'<td>'+(l.status==='pending'?'<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm ok" data-act="lApprove" data-id="'+l.id+'">Approve</button><button class="btn sm bad" data-act="lReject" data-id="'+l.id+'">Not approve</button></div>':'')+'</td>':'')+'</tr>'}).join('')+'</tbody></table></div>'}
+function aLeaves(){return head('Leave Requests','Approving deducts from the paid leave balance automatically. Days beyond the balance count as unpaid.')+leaveTable(S.leaves,true)}
+function sLeave(){
+  const s=me();const b=balance(s,today());
+  return head('Leave','Apply here before taking leave. An admin will approve it.','<button class="btn primary" data-act="leaveForm">+ Apply for leave</button>')+
+  '<div class="grid g3">'+stat(b.available,'Available now')+stat(b.used,'Used this leave year')+stat(b.usedMonth,'Used this month')+stat(b.total,s.leaveType==='yearly'?'Total for the year':'Total for the year ('+s.leaveCount+' per month)')+'</div>'+
+  '<div class="note">Leave year: <b>'+fdate(b.ly.start)+' – '+fdate(b.ly.end)+'</b>. '+(s.leaveType==='monthly'?'You get '+s.leaveCount+' paid leave each month. Unused leave carries forward until the end of the leave year. Earned so far: '+b.earned+'.':'Your full yearly paid leave is available from the start of the leave year.')+'</div>'+
+  leaveTable(S.leaves.filter(l=>l.sid===s.id),false)}
+function leaveFormModal(){const t=today();const s=me();
+  ui.modal=()=>'<form class="stack" data-form="leave"><div class="spread"><h2>Apply for leave</h2><button type="button" class="btn sm" data-act="close">Close</button></div>'+
+  '<label class="f">Leave type<select id="lv-type" name="kind" data-chg="leaveType"><option value="full">Full day leave</option><option value="half">Halfday leave</option></select></label>'+
+  '<label class="f" id="lvHalfWrap" hidden>Which half<select id="lv-half" name="half"><option value="first">'+esc(halfLabel(s,'first'))+'</option><option value="second">'+esc(halfLabel(s,'second'))+'</option></select></label>'+
+  '<div class="grid g2"><label class="f" id="lvFromLbl">From<input id="lv-from" name="from" type="date" required value="'+t+'"></label><label class="f" id="lvToWrap">To<input id="lv-to" name="to" type="date" required value="'+t+'"></label></div>'+
+  '<label class="f">Reason<textarea id="lv-reason" name="reason" required></textarea></label><p class="small muted" style="margin:0">Sundays and holidays are not counted as leave.</p><button class="btn primary" type="submit">Send request</button></form>';render()}
+function syncLeaveForm(){const el=document.getElementById('lv-type');if(!el)return;const full=el.value==='full';const w=document.getElementById('lvToWrap');w.hidden=!full;w.querySelector('input').required=full;document.getElementById('lvHalfWrap').hidden=full;document.getElementById('lvFromLbl').firstChild.textContent=full?'From':'Date'}
+function syncClientSel(){const el=document.getElementById('tk-client');if(!el)return;document.getElementById('newClientWrap').hidden=el.value!=='__new'}
+
+/* ---------- holidays ---------- */
+function aHolidays(){
+  const list=S.holidays.slice().sort((a,b)=>a.date<b.date?-1:1);
+  return head('Holidays','These dates count as holidays for all staff. Sundays are off automatically.')+
+  '<form class="panel row" data-form="holiday" style="align-items:flex-end"><label class="f" style="flex:1 1 160px">Date<input id="hd-date" name="date" type="date" required></label><label class="f" style="flex:2 1 200px">Occasion<input id="hd-name" name="name" required placeholder="e.g. Diwali"></label><button class="btn primary" type="submit">Add holiday</button></form>'+
+  (list.length?'<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Day</th><th>Holiday</th><th></th></tr></thead><tbody>'+list.map(h=>'<tr><td class="mono">'+fdate(h.date)+'</td><td>'+DAYS[pd(h.date).getDay()]+'</td><td>'+esc(h.name)+'</td><td class="num"><button class="btn sm bad" data-act="hDel" data-d="'+h.date+'">Remove</button></td></tr>').join('')+'</tbody></table></div>':'<div class="empty">No holidays added.</div>')}
+
+/* ---------- salary ---------- */
+function aSalary(){
+  if(!S.staff.length)return head('Salary')+'<div class="empty">Add staff first.</div>';
+  const sid=ui.salaryStaff&&staffById(ui.salaryStaff)?ui.salaryStaff:S.staff[0].id;ui.salaryStaff=sid;const s=staffById(sid);
+  const month=curMonth();if(!monthWait[month])return head('Salary calculation')+loadingBox;
+  const c=salaryFor(s,month);const sum=monthSummary(s,month);const miss=unreported(s,month);
+  const rows=c.items.map(it=>{const dec=it.decision;const hw=it.type==='holidaywork';
+    const amt=hw?(dec==='approved'?'<span class="money plus">+'+rs(it.amt)+'</span>':'<span class="small muted">Admin sets</span>'):it.amt===0?'<span class="muted">–</span>':'<span class="money '+(it.amt<0?'minus':'plus')+'">'+(it.amt<0?'−':'+')+rs(it.amt)+'</span>';
+    let act='';
+    if(dec==='info')act='<span class="small muted">For information</span>';
+    else if(hw){
+      if(dec==='pending')act='<div class="row" style="gap:6px;flex-wrap:nowrap"><input type="number" min="0" id="hw-'+it.id+'" placeholder="₹ amount" style="width:110px"><button class="btn sm ok" data-act="hwAdd" data-i="'+it.id+'">Add</button><button class="btn sm" data-act="decide" data-i="'+it.id+'" data-d="rejected">Don\'t add</button></div><span class="small" style="color:var(--warn)">Decision pending</span>';
+      else act='<div class="row" style="gap:6px;flex-wrap:nowrap">'+(dec==='approved'?'<span class="pill p-ok">Added</span>':'<span class="pill p-bad">Not added</span>')+'<button class="btn sm" data-act="decide" data-i="'+it.id+'" data-d="'+dec+'">Change</button></div>';
+    }else act='<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm '+(dec==='approved'?'ok':'')+'" data-act="decide" data-i="'+it.id+'" data-d="approved" aria-pressed="'+(dec==='approved')+'">'+(it.amt>0?'Add':'Cut')+'</button><button class="btn sm '+(dec==='rejected'?'bad':'')+'" data-act="decide" data-i="'+it.id+'" data-d="rejected" aria-pressed="'+(dec==='rejected')+'">'+(it.amt>0?'Don\'t add':'Don\'t cut')+'</button></div>'+(dec==='pending'?'<span class="small" style="color:var(--warn)">Decision pending</span>':'')+(it.by&&dec!=='pending'?'<div class="small muted">by '+esc(it.by)+'</div>':'');
+    const tasks=hw&&it.tasks&&it.tasks.length?'<ul class="tasklist">'+it.tasks.map(k=>'<li><b>'+esc(k.title)+'</b> · '+esc(k.client)+' · worked '+minToHM(k.mins)+' · reached '+k.progress+'%</li>').join('')+'</ul>':hw?'<div class="small muted">No task activity recorded that day</div>':'';
+    return '<tr class="'+(hw?'hw':'')+'"><td class="mono">'+fdshort(it.date)+'</td><td><b>'+TYPE_LABEL[it.type]+'</b><div class="small muted">'+esc(it.detail)+'</div>'+tasks+'</td><td>'+(it.reason?esc(it.reason):'<span class="muted small">No reason given</span>')+'</td><td class="num">'+amt+'</td><td>'+act+'</td></tr>'});
+  return head('Salary calculation','Only data from reports sent by staff appears here. Read each reason, then approve or reject the cut or addition.')+
+  '<div class="row"><label class="f" style="flex-direction:row;align-items:center;gap:8px">Staff<select id="salStaff" data-chg="salStaff" style="width:auto">'+S.staff.map(x=>'<option value="'+x.id+'" '+(x.id===sid?'selected':'')+'>'+esc(x.name)+(x.active===false?' (inactive)':'')+'</option>').join('')+'</select></label>'+monthPicker()+'</div>'+
+  '<div class="grid g2" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))"><section class="panel net"><h3 style="margin-bottom:6px">'+esc(s.name)+' · '+fmonth(month)+'</h3>'+
+  '<div><span>Base salary</span><span class="money">'+rs(c.base)+'</span></div><div><span>Approved cuts</span><span class="money minus">−'+rs(c.cut)+'</span></div><div><span>Approved overtime</span><span class="money plus">+'+rs(c.add)+'</span></div><div><span>Holiday work pay</span><span class="money plus">+'+rs(c.hw)+'</span></div>'+
+  '<div class="tot"><span>Final salary</span><span class="money">'+rs(c.net)+'</span></div>'+
+  (c.pending?'<div class="note warn">'+c.pending+' entries still need a decision: '+rs(c.pendCut)+' in cuts, '+rs(c.pendAdd)+' in additions'+(c.items.some(i=>i.type==='holidaywork'&&i.decision==='pending')?', plus holiday work':'')+'.</div>':'')+
+  (miss.length?'<div class="note warn">'+miss.length+' entr'+(miss.length===1?'y':'ies')+' for this month '+(miss.length===1?'is':'are')+' not in a report yet: '+miss.slice(0,6).map(m=>fdshort(m.date)+' '+TYPE_LABEL[m.type]).join(', ')+(miss.length>6?'…':'')+'.</div>':'')+'</section>'+
+  '<section class="panel stack"><h3>Rules used</h3><div class="small kv"><span class="muted">Absent</span><span class="money">'+rs(s.absentCut)+'</span><span class="muted">Halfday (unpaid)</span><span class="money">'+rs(s.halfdayCut)+'</span><span class="muted">Late</span><span>20 min = latemark; each full hour = '+rs(LATE_CUT_PER_HOUR)+'</span><span class="muted">Left early</span><span>Up to 45 min free; then '+rs(EARLY_CUT_PER_HOUR)+' per hour</span><span class="muted">Overtime</span><span>'+rs(s.otRate)+'/hr from 30 min; 30–44 min of an hour = ½, 45+ = full</span></div></section></div>'+
+  summaryStrip(sum,month)+
+  (rows.length?'<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>What happened</th><th>Staff reason</th><th class="num">Amount</th><th>Decision</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div>':'<div class="empty">'+esc(s.name)+' has not sent a report for '+fmonth(month)+' yet.</div>')}
+
+/* ---------- staff: home ---------- */
+function sHome(){
+  const s=me();const t=today();ensureMonth(t.slice(0,7));const r=rec(s.id,t)||{};const i=dayInfo(s,t);
+  const onBreak=(r.breaks||[]).find(b=>!b.out);const nm=toMin(nowHM());
+  let state,btns='',note='';const off=i.kind==='sunday'||i.kind==='holiday';
+  if(!monthWait[t.slice(0,7)])state='Loading…';
+  else if(i.kind==='leave'&&i.weight===1){state='You are on approved leave today.'}
+  else if(!r.in){state=off?'Today is '+esc(i.offName)+' (off).':'Not checked in yet.';btns='<button class="btn primary" data-act="checkIn">Check In</button>';
+    if(off)note='<div class="note">If you are working today, check in. It will be recorded as holiday work and the admin will decide the extra pay.</div>';
+    else{if(i.half==='first')note='<div class="note">Your first-half leave is approved. Your shift today starts at '+t12(fromMin(i.effS))+'.</div>';
+      const lm=nm-i.effS;if(lm>=LATE_GRACE)note+='<div class="note warn">Your shift started at '+t12(fromMin(i.effS))+'. Checking in now will be marked late'+(lm>=60?', with a possible '+rs(lateCut(lm))+' cut (after admin approval)':'')+'.</div>'}}
+  else if(r.out){state='Checked out at '+t12(r.out)+'.'}
+  else{state=onBreak?'On break since '+t12(onBreak.in):'Working since '+t12(r.in);
+    if(s.perms&&s.perms.breaks)btns+=onBreak?'<button class="btn ok" data-act="breakOut">Break Out</button>':'<button class="btn" data-act="breakIn">Break In</button>';
+    btns+='<button class="btn primary" data-act="checkOutAsk" '+(onBreak?'disabled title="End your break first"':'')+'>Check Out</button>';
+    if(i.half==='second')note='<div class="note">Your second-half leave is approved. You can check out at '+t12(fromMin(i.effE))+'.</div>'}
+  const tl=[];if(r.in)tl.push(['In',r.in]);(r.breaks||[]).forEach(b=>{tl.push(['Break',b.in+(b.out?'–'+b.out:'')])});if(r.out)tl.push(['Out',r.out]);
+  const b=balance(s,t);const my=S.tasks.filter(k=>k.sid===s.id&&k.status!=='done').slice(0,4);
+  return head('Hello, '+esc(s.name.split(' ')[0]),fdate(t)+', '+DAYS[pd(t).getDay()]+' · Shift '+t12(s.start)+' – '+t12(s.end))+
+  (!ui.user.pwChanged?'<div class="note warn">You are still using the starting password. Please change it from Profile.</div>':'')+
+  '<section class="panel punchbox"><div class="stack" style="gap:6px"><div class="row" style="gap:12px"><span class="clock" id="liveClock">'+t12(nowHM())+'</span><span class="muted">'+state+'</span></div>'+
+  '<div class="row" style="gap:6px">'+(i.kind==='present'||i.kind==='holidaywork'?statusPills(i):'')+'</div>'+
+  (tl.length?'<div class="tl-row">'+tl.map(x=>'<span><b>'+x[0]+'</b> '+(x[0]==='Break'?x[1].split('–').map(t12).join(' – '):t12(x[1]))+'</span>').join('')+'</div>':'')+'</div>'+
+  (btns?'<div class="row">'+btns+'</div>':'')+'</section>'+note+
+  '<div class="grid g2">'+(s.perms&&s.perms.tasks?'<section class="panel stack"><div class="spread"><h3>Open tasks</h3><button class="btn sm" data-act="nav" data-v="tasks">See all</button></div>'+(my.length?my.map(k=>'<div><div class="spread"><b>'+esc(k.title)+'</b><span class="pill '+TS[k.status][1]+'">'+TS[k.status][0]+'</span></div><div class="row small muted" style="gap:8px"><div class="bar" style="flex:1"><i style="width:'+k.progress+'%"></i></div>'+k.progress+'%</div></div>').join(''):'<p class="muted" style="margin:0">No open tasks. Add today\'s work.</p>')+'</section>':'')+
+  '<section class="panel stack"><h3>Paid leave</h3><div class="row" style="gap:24px"><div><span class="clock">'+b.available+'</span><div class="small muted">Available now</div></div><div><span class="clock">'+b.used+'<span class="muted" style="font-size:16px"> / '+b.total+'</span></span><div class="small muted">Used this leave year</div></div></div><span class="small muted">Leave year '+fdshort(b.ly.start)+' – '+fdate(b.ly.end)+'</span></section></div>'}
+function checkoutModal(){
+  const s=me();const t=nowHM();const i=dayInfo(s,today());const o=toMin(t),e=toMin(s.end);const holiday=i.kind==='holidaywork';
+  const otMin=!holiday&&i.half!=='second'?o-e:0;const ot=otMin>=OT_MIN;const early=!holiday&&o<i.effE;const em=early?i.effE-o:0;
+  ui.modal=()=>'<form class="stack" data-form="checkout"><div class="spread"><h2>Check Out · '+t12(t)+'</h2><button type="button" class="btn sm" data-act="close">Close</button></div>'+
+  (holiday?'<p class="muted" style="margin:0">Today is '+esc(i.offName)+'. Your time will be recorded as holiday work. You can add a reason when you send the attendance report.</p>':'')+
+  (ot?'<div class="note">Overtime today: <b>'+minToHM(otMin)+'</b> after '+t12(s.end)+' (paid as '+otUnits(otMin)+' hr, about '+rs(otAmount(otMin,+s.otRate||0))+' after admin approval). Write the reason now. It will appear in your report automatically.</div><label class="f">Why did you work overtime?<textarea id="co-ot" name="ot" required placeholder="e.g. Client asked for an urgent revision"></textarea></label>':'')+
+  (early?'<div class="note warn">Your shift ends at '+t12(fromMin(i.effE))+'. You are leaving '+minToHM(em)+' early. '+(earlyCut(em)?'A cut of '+rs(earlyCut(em))+' may apply after admin approval.':'No cut for up to 45 minutes.')+' Apply for a halfday leave instead if you are taking half the day off.</div>':'')+
+  (!holiday&&!ot&&!early?'<p class="muted" style="margin:0">Your day is complete. Check out now?</p>':'')+
+  '<button class="btn primary big" type="submit">Check Out</button></form>';render()}
+
+/* ---------- staff: report ---------- */
+function sReport(){
+  const s=me();const rp=ui.report;const cur=today().slice(0,7);
+  const past=S.reports.filter(r=>r.sid===s.id).slice().sort((a,b)=>a.month<b.month?1:-1);
+  const exists=rp&&past.find(r=>r.month===rp.month);
+  let builder='';
+  if(rp){
+    builder=rp.items.length?'<form class="stack" data-form="report">'+(exists?'<div class="note">You already sent a report for '+fmonth(rp.month)+'. These new entries will be added to the same report.</div>':'')+'<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>What happened</th><th class="num">Amount</th><th>Reason</th></tr></thead><tbody>'+
+    rp.items.map((it,k)=>'<tr class="'+(it.type==='holidaywork'?'hw':'')+'"><td class="mono">'+fdshort(it.date)+'</td><td><b>'+TYPE_LABEL[it.type]+'</b><div class="small muted">'+esc(it.detail)+'</div>'+(it.tasks&&it.tasks.length?'<ul class="tasklist">'+it.tasks.map(x=>'<li>'+esc(x.title)+' · '+minToHM(x.mins)+' · '+x.progress+'%</li>').join('')+'</ul>':'')+'</td><td class="num">'+(it.type==='holidaywork'?'<span class="small muted">Admin decides</span>':it.amt?'<span class="money '+(it.amt<0?'minus':'plus')+'">'+(it.amt<0?'−':'+')+rs(it.amt)+'</span>':'–')+'</td><td style="min-width:220px"><textarea id="rp-'+k+'" name="r'+k+'" data-k="'+k+'" rows="2" placeholder="'+(it.type==='overtime'?'Written at checkout':it.type==='holidaywork'?'Why did you work on this day?':'Write the reason')+'">'+esc(it.reason)+'</textarea></td></tr>').join('')+
+    '</tbody></table></div><div class="spread"><span class="small muted">Amounts are estimates. The admin makes the final decision.</span><div class="row"><button type="button" class="btn" data-act="cancelReport">Cancel</button><button class="btn primary" type="submit">Send report</button></div></div></form>':
+    '<div class="empty">Nothing new to report for '+fmonth(rp.month)+'. There were no late, absent, early, halfday, holiday work or overtime entries, or they were already sent.</div>'}
+  const pastHtml=past.map(r=>{const p=r.items.filter(i=>i.decision==='pending').length;const editable=r.items.some(i=>i.decision==='pending'||i.decision==='info');
+    return '<details class="panel"><summary class="spread" style="cursor:pointer"><b>'+fmonth(r.month)+' <span class="small muted">('+fdshort(r.from)+' – '+fdshort(r.to)+')</span></b><span class="row" style="gap:6px"><span class="small muted">Last sent '+fdshort(r.sent)+'</span>'+(p?'<span class="pill p-warn">'+p+' pending</span>':'<span class="pill p-ok">Reviewed</span>')+'</span></summary>'+
+    '<form class="stack" data-form="reasons" data-r="'+r.id+'" style="margin-top:12px"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>What happened</th><th>Reason</th><th>Status</th></tr></thead><tbody>'+
+    r.items.map(i=>{const open=i.decision==='pending'||i.decision==='info';
+      return '<tr><td class="mono" style="white-space:nowrap">'+fdshort(i.date)+'</td><td><b>'+TYPE_LABEL[i.type]+'</b><div class="small muted">'+esc(i.detail)+'</div></td><td style="min-width:220px">'+(open?'<textarea id="x-'+i.id+'" name="x'+i.id+'" rows="2" placeholder="Write the reason">'+esc(i.reason)+'</textarea>':esc(i.reason)||'<span class="small muted">No reason given</span>')+'</td><td>'+(i.decision==='info'?'<span class="small muted">No amount</span>':i.decision==='pending'?'<span class="pill p-warn">Pending</span>':i.decision==='approved'?'<span class="pill p-ok">Approved</span>'+(i.type==='holidaywork'?' <span class="money plus">+'+rs(i.amt)+'</span>':''):'<span class="pill p-bad">Not approved</span>')+'</td></tr>'}).join('')+'</tbody></table></div>'+
+    (editable?'<div class="spread"><span class="small muted">You can change a reason until the admin decides on that entry.</span><button class="btn primary" type="submit">Save reasons</button></div>':'')+'</form></details>'}).join('');
+  return head('Send attendance report','Pick a month. The portal lists every late, absent, early checkout, halfday, holiday work and overtime entry. Add a reason for each one.')+
+  '<form class="panel row" data-form="reportLoad" style="align-items:flex-end"><label class="f" style="flex:1 1 180px">Month<input id="rl-month" name="month" type="month" required value="'+(rp?rp.month:cur)+'" max="'+cur+'"></label><button class="btn primary" type="submit">Load entries</button></form>'+
+  builder+(past.length?'<h2>Reports already sent</h2>'+pastHtml:'')}
+
+/* ---------- profile / account ---------- */
+function profileView(){
+  const admin=ui.user.role==='admin';const row=(k,v)=>'<span class="muted">'+k+'</span><span>'+v+'</span>';
+  const s=admin?null:me();
+  return head(admin?'Account':'Profile')+
+  (admin?'<section class="panel"><div class="kv">'+row('Name',esc(ui.user.name))+row('Username','<span class="mono">'+esc(ui.user.username)+'</span>')+row('Role','Admin')+'</div></section>':
+   '<section class="panel"><div class="kv">'+row('Name',esc(s.name))+row('Username','<span class="mono">'+esc(s.user)+'</span>')+row('Job role',esc(s.role))+row('Contact',esc(s.contact))+row('Joined',fdate(s.joined))+row('Shift',t12(s.start)+' – '+t12(s.end))+row('Paid leave',s.leaveCount+' per '+(s.leaveType==='yearly'?'year':'month'))+'</div></section>')+
+  '<form class="panel stack" data-form="pw" style="max-width:420px"><h3>Change password</h3><label class="f">Current password<input id="pw-old" name="old" type="password" required autocomplete="current-password"></label><label class="f">New password<input id="pw-new" name="nw" type="password" required minlength="6" autocomplete="new-password"></label><label class="f">Confirm new password<input id="pw-new2" name="nw2" type="password" required minlength="6" autocomplete="new-password"></label><button class="btn primary" type="submit">Save password</button></form>'+
+  (admin?'<section class="panel stack" style="max-width:520px"><h3>Backup</h3><p class="muted" style="margin:0">Download a copy of all portal data (staff, attendance, tasks, leave, reports, history) as a file. Keep it safe, since it contains salary details. Doing this once a month is a good habit.</p><div><button class="btn" data-act="backup">Download backup</button></div></section>':'')}
+
+/* ---------- account actions ---------- */
+async function createAuthUser(username,password){
+  const email=username+'-'+Date.now().toString(36)+EMAIL_DOMAIN;
+  const sec=initializeApp(firebaseConfig,'sec-'+uid());
+  try{const sa=getAuth(sec);const cred=await createUserWithEmailAndPassword(sa,email,password);await signOut(sa);return{uid:cred.user.uid,email}}
+  finally{deleteApp(sec).catch(()=>{})}}
+async function doLogin(u,p){
+  u=(u||'').trim().toLowerCase();if(!u||!p)return;
+  ui.busy=true;ui.err='';render();
+  try{const l=await getDoc(doc(db,'logins',u));
+    if(!l.exists()){ui.err='Wrong username or password.';return}
+    await signInWithEmailAndPassword(auth,l.data().email,p);
+  }catch(e){ui.err=errText(e)}
+  finally{ui.busy=false;render()}}
+async function doSetup(v){
+  for(let i=0;i<3;i++){if((v['p'+i]||'').length<6){ui.err='Each password must be at least 6 characters.';render();return}if(v['p'+i]!==v['c'+i]){ui.err='The passwords for '+ADMIN_LIST[i].name+' do not match.';render();return}}
+  ui.busy=true;ui.err='';ui.settingUp=true;render();
+  try{
+    for(let i=0;i<3;i++){const a=ADMIN_LIST[i];const email=a.user+EMAIL_DOMAIN;
+      let cred;
+      try{cred=await createUserWithEmailAndPassword(auth,email,v['p'+i])}
+      catch(err){if(err.code==='auth/email-already-in-use')cred=await signInWithEmailAndPassword(auth,email,v['p'+i]);else throw err}
+      await setDoc(doc(db,'users',cred.user.uid),{role:'admin',name:a.name,username:a.user,pwChanged:true});
+      await setDoc(doc(db,'logins',a.user),{email,uid:cred.user.uid});
+      if(i===2){await setDoc(doc(db,'config','clients'),{list:DEFAULT_CLIENTS});await setDoc(doc(db,'config','setup'),{done:true,at:stamp()})}
+      if(i<2)await signOut(auth)}
+    ui.setup=false;ui.settingUp=false;await signOut(auth);ui.err='';toast('Admin accounts created. Please sign in.');
+  }catch(e){console.error(e);ui.err='Setup stopped: '+errText(e);ui.settingUp=false}
+  finally{ui.busy=false;render()}}
+
+/* ---------- events ---------- */
+document.addEventListener('click',async e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
+  if(a==='closeBg'){if(e.target===el){ui.modal=null;render()}return}
+  const id=el.dataset.id;const t=today(),n=nowHM();
+  switch(a){
+    case 'close':ui.modal=null;break;
+    case 'logout':await signOut(auth);return;
+    case 'nav':ui.view=el.dataset.v;ui.sel=null;ui.report=null;ui.modal=null;window.scrollTo(0,0);break;
+    case 'staffForm':staffFormModal(id);return;
+    case 'openStaff':ui.view='staff';ui.sel=id;ui.tab='att';window.scrollTo(0,0);break;
+    case 'back':ui.sel=null;break;
+    case 'tab':ui.tab=el.dataset.t;break;
+    case 'attStaff':ui.attStaff=id;break;
+    case 'goSalary':ui.view='salary';ui.salaryStaff=id;ui.month=el.dataset.m;ui.sel=null;window.scrollTo(0,0);break;
+    case 'attEdit':attEditModal(id,el.dataset.d);return;
+    case 'attDelAsk':ui.modal=()=>'<div class="stack"><h2>Remove this attendance record?</h2><p class="muted" style="margin:0">'+esc(staffById(id).name)+' · '+fdate(el.dataset.d)+'. The day will count as absent. This is saved in Change history.</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close">Cancel</button><button class="btn bad" data-act="attDel" data-id="'+id+'" data-d="'+el.dataset.d+'">Remove</button></div></div>';break;
+    case 'attDel':{const r=rec(id,el.dataset.d);await run(async()=>{await deleteDoc(doc(db,'att',id+'_'+el.dataset.d));await addHistory(id,[{field:'in',old:r.in,new:null},{field:'out',old:r.out,new:null}],'Attendance removed for '+fdate(el.dataset.d));log(id,'Attendance for '+fdshort(el.dataset.d)+' removed by '+meName())},'Record removed');ui.modal=null;break}
+    case 'resetPwAsk':ui.modal=()=>'<div class="stack"><h2>Reset password?</h2><p class="muted" style="margin:0">'+esc(staffById(id).name)+'\'s password will become <b class="mono">123456</b>. Their old password will stop working.</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="resetPw" data-id="'+id+'">Reset</button></div></div>';break;
+    case 'resetPw':{const s=staffById(id);await run(async()=>{
+        const acc=await createAuthUser(s.user,'123456');const b=writeBatch(db);
+        b.set(doc(db,'users',acc.uid),{role:'staff',staffId:id,name:s.name,username:s.user,pwChanged:false});
+        if(s.uid)b.delete(doc(db,'users',s.uid));
+        b.set(doc(db,'logins',s.user),{email:acc.email,uid:acc.uid});b.update(doc(db,'staff',id),{uid:acc.uid});await b.commit();
+        await addHistory(id,[],'Password reset to 123456');log(id,'Password reset by '+meName())},'Password reset to 123456');ui.modal=null;break}
+    case 'deactivateAsk':ui.modal=()=>'<div class="stack"><h2>Deactivate '+esc(staffById(id).name)+'?</h2><p class="muted" style="margin:0">They will not be able to sign in. All their attendance, tasks, reports and history stay saved, and you can reactivate them later.</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close">Cancel</button><button class="btn bad" data-act="deactivate" data-id="'+id+'">Deactivate</button></div></div>';break;
+    case 'deactivate':case 'activate':{const s=staffById(id);const v=a==='activate';await run(async()=>{const b=writeBatch(db);
+        b.update(doc(db,'staff',id),{active:v});
+        if(s.uid){if(v)b.set(doc(db,'users',s.uid),{role:'staff',staffId:id,name:s.name,username:s.user,pwChanged:true});else b.delete(doc(db,'users',s.uid))}
+        await b.commit();await addHistory(id,[{field:'active',old:!v,new:v}]);log(id,(v?'Reactivated':'Deactivated')+' by '+meName())},s.name+(v?' reactivated':' deactivated'));ui.modal=null;break}
+    case 'taskForm':taskFormModal();return;
+    case 'tStart':case 'tDone':case 'tReopen':{const k=S.tasks.find(x=>x.id===id);
+      const st=a==='tDone'?'done':'started';const p=a==='tDone'?100:a==='tReopen'?Math.min(k.progress,90):k.progress;
+      await run(()=>updateDoc(doc(db,'tasks',id),{status:st,progress:p,hist:arrayUnion(taskEvent(k,a==='tStart'?'start':a==='tDone'?'done':'reopen',p))}));
+      log(k.sid,(a==='tDone'?'Completed':a==='tStart'?'Started':'Reopened')+' task: '+k.title);return}
+    case 'tPause':pauseModal(id);return;
+    case 'tPauseAt':{const k=S.tasks.find(x=>x.id===id);const p=+el.dataset.p;ui.modal=null;
+      await run(()=>updateDoc(doc(db,'tasks',id),{status:'paused',progress:p,hist:arrayUnion(taskEvent(k,'pause',p))}));log(k.sid,'Paused task at '+p+'%: '+k.title);break}
+    case 'tDelAsk':ui.modal=()=>'<div class="stack"><h2>Delete this task?</h2><p class="muted" style="margin:0">'+esc(S.tasks.find(x=>x.id===id).title)+'</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close">Cancel</button><button class="btn bad" data-act="tDel" data-id="'+id+'">Delete</button></div></div>';break;
+    case 'tDel':ui.modal=null;await run(()=>deleteDoc(doc(db,'tasks',id)),'Task deleted');break;
+    case 'lApprove':case 'lReject':{const l=S.leaves.find(x=>x.id===id);const ok=a==='lApprove';
+      const upd={status:ok?'approved':'rejected',by:meName()};if(ok)upd.alloc=allocate(l);
+      await run(()=>updateDoc(doc(db,'leaves',id),upd),ok?'Leave approved':'Leave not approved');log(l.sid,'Leave '+(ok?'approved':'not approved')+' ('+fdshort(l.from)+') by '+meName());return}
+    case 'leaveForm':leaveFormModal();return;
+    case 'hDel':await run(()=>deleteDoc(doc(db,'holidays',el.dataset.d)),'Holiday removed');return;
+    case 'decide':{const it=S.items.find(x=>x.id===el.dataset.i);const st=staffById(it.sid);
+      const nd=it.decision===el.dataset.d?'pending':el.dataset.d;const upd={decision:nd,by:meName()};
+      if(it.type==='holidaywork')upd.amt=0;else upd.amt=nd==='approved'?estimate(st,it):0;
+      await run(()=>updateDoc(doc(db,'items',it.id),upd));return}
+    case 'hwAdd':{const inp=document.getElementById('hw-'+el.dataset.i);const v=Math.round(+(inp&&inp.value));if(!(v>0)){toast('Enter the amount to add');return}
+      await run(()=>updateDoc(doc(db,'items',el.dataset.i),{amt:v,decision:'approved',by:meName()}),rs(v)+' added for holiday work');return}
+    case 'checkIn':{const s=me();await run(()=>setDoc(doc(db,'att',s.id+'_'+t),{sid:s.id,date:t,ym:t.slice(0,7),inTs:serverTimestamp(),outTs:null,breaks:[],otReason:''}),'Checked in');log(s.id,'Checked in at '+t12(n));return}
+    case 'breakIn':case 'breakOut':{const sid=ui.user.sid;const r=rec(sid,t);if(!r)return;
+      const br=(r.breaks||[]).map(b=>({in:b.in,out:b.out||null}));
+      if(a==='breakIn')br.push({in:n,out:null});else{const b=br.find(x=>!x.out);if(b)b.out=n}
+      await run(()=>updateDoc(doc(db,'att',sid+'_'+t),{breaks:br}));log(sid,(a==='breakIn'?'Break started at ':'Break ended at ')+t12(n));return}
+    case 'checkOutAsk':checkoutModal();return;
+    case 'cancelReport':ui.report=null;break;
+    case 'backup':await run(async()=>{
+        const out={exportedAt:stamp(),by:meName()};
+        for(const c of ['staff','att','tasks','leaves','items','holidays','history','log','logins']){const sn=await getDocs(collection(db,c));out[c]=sn.docs.map(d=>{const x=d.data();for(const k in x)if(x[k]&&x[k].toMillis)x[k]=new Date(x[k].toMillis()).toISOString();return Object.assign({id:d.id},x)})}
+        const blob=new Blob([JSON.stringify(out,null,1)],{type:'application/json'});const u=URL.createObjectURL(blob);const lk=document.createElement('a');lk.href=u;lk.download='aavora-portal-backup-'+today()+'.json';document.body.appendChild(lk);lk.click();lk.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)},'Backup downloaded');return;
+    default:return;
+  }
+  render();
+});
+document.addEventListener('change',e=>{
+  const el=e.target;const c=el.dataset&&el.dataset.chg;if(!c)return;
+  if(c==='month'){ui.month=el.value||null;if(ui.month)ensureMonth(ui.month)}
+  else if(c==='fStaff')ui.filter.staff=el.value;
+  else if(c==='fStatus')ui.filter.status=el.value;
+  else if(c==='salStaff')ui.salaryStaff=el.value;
+  else if(c==='clientSel'){syncClientSel();return}
+  else if(c==='leaveType'){syncLeaveForm();return}
+  render()});
+document.addEventListener('input',e=>{const el=e.target;if(el.dataset&&el.dataset.k!=null&&ui.report){ui.report.items[+el.dataset.k].reason=el.value}});
+document.addEventListener('submit',async e=>{
+  const f=e.target;const k=f.dataset.form;if(!k)return;e.preventDefault();const v=Object.fromEntries(new FormData(f).entries());
+  if(k==='login'){doLogin(v.u,v.p);return}
+  if(k==='setup'){doSetup(v);return}
+  if(k==='staff'){
+    const id=f.dataset.id;const user=v.user.trim().toLowerCase();
+    if(!/^[a-z0-9._-]+$/.test(user)){toast('Username can use only letters, numbers, dot, dash and underscore');return}
+    if(S.staff.some(s=>s.user===user&&s.id!==id)||ADMIN_LIST.some(a=>a.user===user)){toast('This username is already taken');return}
+    if(v.end<=v.start){toast('Shift end must be after shift start');return}
+    const perms={};PERMS.forEach(([p])=>perms[p]=v['p_'+p]?1:0);
+    const data={name:v.name.trim(),user,role:v.role.trim(),contact:v.contact.trim(),salary:+v.salary,joined:v.joined,start:v.start,end:v.end,halfdayCut:+v.halfdayCut,absentCut:+v.absentCut,otRate:+v.otRate,leaveType:v.leaveType,leaveCount:+v.leaveCount,perms};
+    if(id){const s=staffById(id);const ch=[];
+      for(const key in data){if(JSON.stringify(s[key])!==JSON.stringify(data[key]))ch.push({field:key,old:s[key]??null,new:data[key]})}
+      if(!ch.length){ui.modal=null;render();toast('No changes');return}
+      const ok=await run(async()=>{
+        if(data.user!==s.user){const l=await getDoc(doc(db,'logins',data.user));if(l.exists())throw {message:'This username is already taken'}}
+        const b=writeBatch(db);b.update(doc(db,'staff',id),data);
+        if(data.user!==s.user||data.name!==s.name){
+          if(data.user!==s.user){const old=await getDoc(doc(db,'logins',s.user));if(old.exists()){b.set(doc(db,'logins',data.user),old.data());b.delete(doc(db,'logins',s.user))}}
+          if(s.uid&&s.active!==false)b.update(doc(db,'users',s.uid),{name:data.name,username:data.user})}
+        if(ch.some(c=>['leaveType','leaveCount','joined'].includes(c.field))){const ns=Object.assign({},s,data);const keep=S.staff;S.staff=S.staff.map(x=>x.id===id?ns:x);
+          S.leaves.filter(l=>l.sid===id&&l.status==='approved'&&l.to>=today()).forEach(l=>b.update(doc(db,'leaves',l.id),{alloc:allocate(l)}));S.staff=keep}
+        await b.commit();await addHistory(id,ch);log(id,'Details changed by '+meName()+': '+ch.map(c=>FIELD_LABEL[c.field]).join(', '));return true},'Changes saved');
+      if(ok){ui.modal=null;render()}return}
+    const ok=await run(async()=>{
+      const l=await getDoc(doc(db,'logins',user));if(l.exists())throw {message:'This username is already taken'};
+      const acc=await createAuthUser(user,'123456');const sid='s'+uid();const b=writeBatch(db);
+      b.set(doc(db,'staff',sid),Object.assign({},data,{active:true,uid:acc.uid,createdAt:stamp(),createdBy:meName()}));
+      b.set(doc(db,'users',acc.uid),{role:'staff',staffId:sid,name:data.name,username:user,pwChanged:false});
+      b.set(doc(db,'logins',user),{email:acc.email,uid:acc.uid});await b.commit();
+      await addHistory(sid,[],'Account created');log(sid,'Account created by '+meName());return true},data.name+' added · password 123456');
+    if(ok){ui.modal=null;render()}return}
+  if(k==='task'){
+    let client=v.client;if(client==='__new'){client=(v.newClient||'').trim();if(!client){toast('Enter the client name');return}}
+    const admin=ui.user.role==='admin';const sid=admin?v.sid:ui.user.sid;if(!sid){toast('Choose a staff member');return}
+    const ok=await run(async()=>{
+      if(!S.clients.includes(client))await setDoc(doc(db,'config','clients'),{list:S.clients.concat([client])});
+      const task={title:v.title.trim(),client,due:v.due,status:'new',progress:0,sid,by:admin?meName()+' (assigned)':'Self',created:today(),hist:[{d:today(),t:nowHM(),a:'create',p:0,n:uid()}]};
+      await addDoc(collection(db,'tasks'),task);log(sid,(admin?'Task assigned by '+meName()+': ':'Added task: ')+task.title);return true},admin?'Task assigned':'Task added');
+    if(ok){ui.modal=null;render()}return}
+  if(k==='leave'){
+    const half=v.kind==='half'?v.half:null;const to=half?v.from:v.to;
+    if(to<v.from){toast('"To" date must be on or after "From" date');return}
+    const l={sid:ui.user.sid,from:v.from,to,type:half?'half':'full',half,reason:v.reason.trim(),status:'pending',applied:today()};
+    if(!leaveDates(l).length){toast('These dates are only Sundays or holidays');return}
+    const ok=await run(async()=>{await addDoc(collection(db,'leaves'),l);log(l.sid,'Applied for '+(half?'halfday':'leave')+': '+fdshort(l.from)+(l.to!==l.from?' – '+fdshort(l.to):''));return true},'Leave request sent');
+    if(ok){ui.modal=null;render()}return}
+  if(k==='holiday'){if(S.holidays.some(h=>h.date===v.date)){toast('There is already a holiday on this date');return}
+    await run(()=>setDoc(doc(db,'holidays',v.date),{date:v.date,name:v.name.trim()}),'Holiday added');f.reset();return}
+  if(k==='checkout'){const s=me();const t=today();const upd={outTs:serverTimestamp()};if(v.ot)upd.otReason=v.ot.trim();
+    const ok=await run(async()=>{await updateDoc(doc(db,'att',s.id+'_'+t),upd);log(s.id,'Checked out at '+t12(nowHM())+(v.ot?' · OT reason: '+v.ot.trim():''));return true},'Checked out');
+    if(ok){ui.modal=null;render()}return}
+  if(k==='attEdit'){const sid=f.dataset.id,d=f.dataset.d;const r=rec(sid,d)||{};
+    if(!v.in){toast('Enter the check in time');return}if(v.out&&v.out<=v.in){toast('Check out must be after check in');return}
+    const ts=hmv=>hmv?Timestamp.fromMillis(Date.parse(d+'T'+hmv+':00+05:30')):null;
+    const ch=[];if((r.in||null)!==(v.in||null))ch.push({field:'in',old:r.in||null,new:v.in||null});if((r.out||null)!==(v.out||null))ch.push({field:'out',old:r.out||null,new:v.out||null});if((r.otReason||'')!==v.ot.trim())ch.push({field:'otReason',old:r.otReason||'',new:v.ot.trim()});
+    if(!ch.length){ui.modal=null;render();return}
+    const ok=await run(async()=>{await setDoc(doc(db,'att',sid+'_'+d),{sid,date:d,ym:d.slice(0,7),inTs:ts(v.in),outTs:ts(v.out),breaks:(r.breaks||[]).map(b=>({in:b.in,out:b.out||null})),otReason:v.ot.trim(),edited:meName()});
+      await addHistory(sid,ch,'Attendance '+fdate(d)+': '+v.note.trim());log(sid,'Attendance for '+fdshort(d)+' edited by '+meName());return true},'Attendance updated');
+    if(ok){ui.modal=null;render()}return}
+  if(k==='reportLoad'){const s=me();const m=v.month;const t=today();const end=monthEnd(m)<t?monthEnd(m):t;
+    await ensureMonth(m);ui.report={month:m,from:m+'-01',to:end,items:buildItems(s,m+'-01',end)};render();return}
+  if(k==='report'){const s=me();const rp=ui.report;
+    const ok=await run(async()=>{const b=writeBatch(db);
+      for(const it of rp.items){const x={sid:s.id,month:rp.month,date:it.date,type:it.type,detail:it.detail,reason:(it.reason||'').trim(),decision:needsDecision(it)?'pending':'info',sent:today(),est:it.amt};if(it.tasks)x.tasks=it.tasks;
+        b.set(doc(db,'items',s.id+'_'+it.date+'_'+it.type),x)}
+      await b.commit();log(s.id,'Sent attendance report for '+fmonth(rp.month)+' ('+rp.items.length+' entries)');return true},'Report sent to admin');
+    if(ok){ui.report=null;render()}return}
+  if(k==='reasons'){const r=S.reports.find(x=>x.id===f.dataset.r);let n=0;
+    await run(async()=>{for(const it of r.items){const nv=v['x'+it.id];if(nv!=null&&(it.decision==='pending'||it.decision==='info')&&nv.trim()!==(it.reason||'')){await updateDoc(doc(db,'items',it.id),{reason:nv.trim()});n++}}
+      if(n)log(r.sid,'Updated '+n+' reason'+(n>1?'s':'')+' in the '+fmonth(r.month)+' report')});toast(n?'Reasons saved':'No changes');return}
+  if(k==='pw'){if(v.nw!==v.nw2){toast('The new passwords do not match');return}if(v.nw.length<6){toast('Password must be at least 6 characters');return}
+    const ok=await run(async()=>{const user=auth.currentUser;await reauthenticateWithCredential(user,EmailAuthProvider.credential(user.email,v.old));await updatePassword(user,v.nw);
+      if(ui.user.role==='staff'){await updateDoc(doc(db,'users',user.uid),{pwChanged:true});ui.user.pwChanged=true;await addDoc(collection(db,'history'),{sid:ui.user.sid,at:stamp(),by:ui.user.name,changes:[],note:'Password changed by staff',ts:serverTimestamp()});log(ui.user.sid,'Changed password')}
+      return true},'Password changed');
+    if(ok){f.reset()}return}
+});
+
+/* ---------- start ---------- */
+setInterval(()=>{const c=document.getElementById('liveClock');if(c)c.textContent=t12(nowHM())},15000);
+onAuthStateChanged(auth,async user=>{
+  if(ui.settingUp)return;
+  clearSubs();S=emptyState();ui.modal=null;ui.report=null;
+  if(!user){ui.user=null;ui.view=null;ui.sel=null;
+    try{const st=await getDoc(doc(db,'config','setup'));ui.setup=!st.exists()}catch(e){ui.setup=false}
+    ui.boot=false;render();return}
+  try{const snap=await getDoc(doc(db,'users',user.uid));
+    if(!snap.exists()){ui.err='This account is not active. Please contact an admin.';await signOut(auth);return}
+    const u=snap.data();ui.user={role:u.role,uid:user.uid,sid:u.staffId||null,name:u.name,username:u.username,pwChanged:u.pwChanged!==false};ui.err='';
+    ui.view=u.role==='admin'?'dash':'home';ui.boot=false;startSubs();render();
+  }catch(e){console.error(e);ui.err=errText(e);ui.boot=false;await signOut(auth)}
+});
+render();
+
+</script>
+</body>
+</html>

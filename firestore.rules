@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() { return request.auth != null; }
+    function profilePath() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function hasProfile() { return signedIn() && exists(profilePath()); }
+    function prof() { return get(profilePath()).data; }
+    function isAdmin() { return hasProfile() && prof().role == 'admin'; }
+    function isStaff() { return hasProfile() && prof().role == 'staff'; }
+    function mySid() { return prof().staffId; }
+    function setupDone() { return exists(/databases/$(database)/documents/config/setup); }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function pad2(n) { return n < 10 ? '0' + string(n) : string(n); }
+    // Today's date in India (UTC+5:30), from the server clock
+    function istDate() {
+      let t = request.time + duration.value(330, 'm');
+      return string(t.year()) + '-' + pad2(t.month()) + '-' + pad2(t.day());
+    }
+
+    // ---------- setup + login lookup ----------
+    match /config/setup {
+      allow get: if true;
+      allow create: if isAdmin() && !setupDone();
+    }
+    match /config/clients {
+      allow read: if hasProfile();
+      allow create, update: if isAdmin()
+        || (isStaff() && request.resource.data.keys().hasOnly(['list']));
+    }
+    match /logins/{name} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if isAdmin()
+        || (!setupDone() && signedIn() && request.resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- accounts ----------
+    match /users/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isAdmin()
+        || (!setupDone() && request.auth.uid == uid && request.resource.data.role == 'admin');
+      allow update: if isAdmin()
+        || (request.auth.uid == uid && changed().hasOnly(['pwChanged']));
+      allow delete: if isAdmin();
+    }
+    match /staff/{sid} {
+      allow get: if isAdmin() || (isStaff() && mySid() == sid);
+      allow list, write: if isAdmin();
+    }
+
+    // ---------- attendance (server time only) ----------
+    match /att/{id} {
+      allow read: if isAdmin() || (isStaff() && resource.data.sid == mySid());
+      allow create: if isAdmin() || (isStaff()
+        && id == mySid() + '_' + istDate()
+        && request.resource.data.sid == mySid()
+        && request.resource.data.date == istDate()
+        && request.resource.data.ym + '-' + pad2((request.time + duration.value(330, 'm')).day()) == istDate()
+        && request.resource.data.inTs == request.time
+        && request.resource.data.outTs == null
+        && request.resource.data.keys().hasOnly(['sid', 'date', 'ym', 'inTs', 'outTs', 'breaks', 'otReason']));
+      allow update: if isAdmin() || (isStaff()
+        && resource.data.sid == mySid()
+        && resource.data.date == istDate()
+        && changed().hasOnly(['outTs', 'otReason', 'breaks'])
+        && (!changed().hasAny(['outTs'])
+            || (resource.data.outTs == null && request.resource.data.outTs == request.time)));
+      allow delete: if isAdmin();
+    }
+
+    // ---------- tasks ----------
+    match /tasks/{id} {
+      allow read: if isAdmin() || (isStaff() && resource.data.sid == mySid());
+      allow create: if isAdmin() || (isStaff() && request.resource.data.sid == mySid());
+      allow update: if isAdmin() || (isStaff()
+        && resource.data.sid == mySid() && request.resource.data.sid == mySid());
+      allow delete: if isAdmin();
+    }
+
+    // ---------- leave ----------
+    match /leaves/{id} {
+      allow read: if isAdmin() || (isStaff() && resource.data.sid == mySid());
+      allow create: if isAdmin() || (isStaff()
+        && request.resource.data.sid == mySid()
+        && request.resource.data.status == 'pending'
+        && !('alloc' in request.resource.data)
+        && !('by' in request.resource.data));
+      allow update, delete: if isAdmin();
+    }
+
+    match /holidays/{d} {
+      allow read: if hasProfile();
+      allow write: if isAdmin();
+    }
+
+    // ---------- attendance report entries ----------
+    match /items/{id} {
+      allow read: if isAdmin() || (isStaff() && resource.data.sid == mySid());
+      allow create: if isAdmin() || (isStaff()
+        && id.matches(mySid() + '_.*')
+        && request.resource.data.sid == mySid()
+        && request.resource.data.decision in ['pending', 'info']
+        && request.resource.data.keys().hasOnly(['sid', 'month', 'date', 'type', 'detail', 'reason', 'decision', 'sent', 'tasks', 'est']));
+      allow update: if isAdmin() || (isStaff()
+        && resource.data.sid == mySid()
+        && resource.data.decision in ['pending', 'info']
+        && changed().hasOnly(['reason']));
+      allow delete: if isAdmin();
+    }
+
+    // ---------- activity + change history (append only) ----------
+    match /log/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() || (isStaff() && request.resource.data.sid == mySid());
+    }
+    match /history/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() || (isStaff()
+        && request.resource.data.sid == mySid()
+        && request.resource.data.changes.size() == 0);
+    }
+  }
+}
