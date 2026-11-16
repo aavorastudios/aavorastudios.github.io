@@ -595,9 +595,12 @@ function taskList(list,admin){
     else if(k.status==='started')actions='<button class="btn sm" data-act="tPause" data-id="'+k.id+'">Pause</button><button class="btn sm ok" data-act="tDone" data-id="'+k.id+'">Complete</button>';
     else if(k.status==='paused')actions='<button class="btn sm primary" data-act="tStart" data-id="'+k.id+'">Resume</button><button class="btn sm ok" data-act="tDone" data-id="'+k.id+'">Complete</button>';
     else actions='<button class="btn sm" data-act="tReopen" data-id="'+k.id+'">Reopen</button>';
+    actions+='<button class="btn sm" data-act="tEdit" data-id="'+k.id+'">Edit</button>';
     if(admin)actions+='<button class="btn sm bad" data-act="tDelAsk" data-id="'+k.id+'">Delete</button>';
     const when=k.past?'<span class="pill p-violet">Past work · '+fmonth(k.month)+'</span>':'<span class="small '+(over?'minus':'muted')+'">Due '+fdshort(k.due)+(over?' · overdue':'')+'</span>';
-    return '<div class="card"><div class="spread"><span class="pill '+TS[k.status][1]+'">'+TS[k.status][0]+'</span>'+when+'</div><b>'+esc(k.title)+'</b>'+(k.past&&k.hours?'<div class="small muted">About '+k.hours+' hr spent</div>':'')+
+    const dt=taskDates(k);const tot=taskTotalMin(k);
+    const meta='<div class="tl-row"><span><b>Start</b> '+(dt.start?fdshort(dt.start):'–')+'</span><span><b>End</b> '+(dt.end?fdshort(dt.end):(k.status==='done'?'–':'Not finished'))+'</span><span><b>Worked</b> '+(tot?minToHM(tot):'–')+(k.status==='started'?' (running)':'')+'</span></div>';
+    return '<div class="card"><div class="spread"><span class="pill '+TS[k.status][1]+'">'+TS[k.status][0]+'</span>'+when+'</div><b>'+esc(k.title)+'</b>'+meta+
     '<div class="small muted">For: <b style="color:var(--ink)">'+esc(k.client)+'</b>'+(admin?' · '+esc(s?s.name:'?'):'')+(k.by&&!k.by.startsWith('Self')?' · '+esc(k.by):'')+'</div>'+
     '<div class="row" style="gap:8px"><div class="bar" style="flex:1"><i style="width:'+k.progress+'%"></i></div><span class="mono small">'+k.progress+'%</span></div><div class="row" style="gap:6px">'+actions+'</div></div>'}).join('')+'</div>'}
 function tasksView(admin){
@@ -608,6 +611,35 @@ function tasksView(admin){
   '<select id="fStatus" data-chg="fStatus" style="width:auto"><option value="">All tasks</option>'+Object.entries(TS).map(([k,v])=>'<option value="'+k+'" '+(f.status===k?'selected':'')+'>'+v[0]+'</option>').join('')+'<option value="daily" '+(f.status==='daily'?'selected':'')+'>Daily tasks only</option><option value="past" '+(f.status==='past'?'selected':'')+'>Past work only</option></select></div>';
   return head(admin?'Tasks':'My tasks',admin?'Staff add their own tasks every day. You can also assign a task to anyone.':'Add your work for the day and keep the progress updated','<div class="row"><button class="btn" data-act="pastForm">+ Add past work</button><button class="btn primary" data-act="taskForm">'+(admin?'+ Assign task':'+ Add task')+'</button></div>')+filters+(S.loaded.tasks?taskList(list,admin):loadingBox)}
 const PAST_FROM='2026-10';
+const evAbs=e=>pd(e.d).getTime()/60000+toMin(e.t);
+function taskSpan(k,a,b){ // minutes between two events; a long gap across days is capped at the start day's shift end
+  if(a.d===b.d)return Math.max(0,toMin(b.t)-toMin(a.t));
+  const st=staffById(k.sid);const end=st?toMin(st.end):19*60;return Math.max(0,end-toMin(a.t))}
+function taskTotalMin(k){
+  const ev=(k.hist||[]).filter(e=>e.d&&e.t).slice().sort((a,b)=>evAbs(a)-evAbs(b));let open=null,mins=0;
+  for(const e of ev){if(e.a==='start'||e.a==='reopen'){if(!open)open=e}else if(e.a==='pause'||e.a==='done'){if(open){mins+=taskSpan(k,open,e);open=null}}}
+  if(open&&k.status==='started')mins+=taskSpan(k,open,{d:today(),t:nowHM()});
+  return mins+(k.hours?Math.round(k.hours*60):0)}
+function taskDates(k){
+  const ev=(k.hist||[]).filter(e=>e.d).slice().sort((a,b)=>evAbs(a)-evAbs(b));
+  const firstStart=(ev.find(e=>e.a==='start')||{}).d||null;
+  const lastDone=k.status==='done'?((ev.filter(e=>e.a==='done').pop())||{}).d||null:null;
+  return{start:k.startDate||firstStart,end:k.endDate||lastDone}}
+const pastDateFields=(k)=>'<label class="f">Start date (optional)<input id="pt-start" name="startDate" type="date" min="'+PAST_FROM+'-01" max="'+today()+'" value="'+esc(k.startDate||'')+'"></label>'+
+  '<label class="f">End date (optional)<input id="pt-end" name="endDate" type="date" min="'+PAST_FROM+'-01" max="'+today()+'" value="'+esc(k.endDate||'')+'"></label>';
+function taskEditModal(id){
+  const k=S.tasks.find(x=>x.id===id);if(!k)return;const cur=today().slice(0,7);
+  const clients=S.clients.includes(k.client)?S.clients:S.clients.concat([k.client]);
+  ui.modal=()=>'<form class="stack" data-form="taskEdit" data-id="'+id+'"><div class="spread"><h2>Edit '+(k.past?'past work':'task')+'</h2><button type="button" class="btn sm" data-act="close">Close</button></div>'+
+  '<label class="f">Task<textarea id="te-title" name="title" required>'+esc(k.title)+'</textarea></label>'+
+  '<div class="grid g2"><label class="f">Whose work is it<select id="tk-client" name="client" data-chg="clientSel">'+clients.map(c=>'<option'+(c===k.client?' selected':'')+'>'+esc(c)+'</option>').join('')+'<option value="__new">+ Add new client</option></select></label>'+
+  '<label class="f" id="newClientWrap" hidden>New client name<input id="tk-newclient" name="newClient"></label>'+
+  (k.past?'<label class="f">Month<input id="te-month" name="month" type="month" required min="'+PAST_FROM+'" max="'+cur+'" value="'+esc(k.month)+'"></label>'+pastDateFields(k)+
+    '<label class="f">Time spent before the portal, in hours (optional)<input id="te-hours" name="hours" type="number" min="0" step="0.5" value="'+esc(k.hours||'')+'"></label>'
+   :'<label class="f">Due date<input id="te-due" name="due" type="date" required value="'+esc(k.due)+'"></label>')+
+  '</div>'+(k.past?'':'<p class="small muted" style="margin:0">Start date, end date and hours worked are recorded automatically from Start, Pause and Complete.</p>')+
+  '<button class="btn primary" type="submit">Save changes</button></form>';
+  render()}
 function pastFormModal(){
   const admin=ui.user.role==='admin';const cur=today().slice(0,7);
   ui.modal=()=>'<form class="stack" data-form="pastTask"><div class="spread"><h2>Add past work</h2><button type="button" class="btn sm" data-act="close">Close</button></div>'+
@@ -617,6 +649,7 @@ function pastFormModal(){
   '<label class="f" id="newClientWrap" hidden>New client name<input id="tk-newclient" name="newClient"></label>'+
   '<label class="f">Month<input id="pt-month" name="month" type="month" required min="'+PAST_FROM+'" max="'+cur+'" value="'+PAST_FROM+'"></label>'+
   '<label class="f">How much was done<select id="pt-prog" name="prog"><option value="100">Complete</option><option value="90">90% (still pending)</option><option value="70">70% (still pending)</option><option value="50">50% (still pending)</option><option value="20">20% (still pending)</option></select></label>'+
+  pastDateFields({})+
   '<label class="f">Time spent in hours (optional)<input id="pt-hours" name="hours" type="number" min="0" step="0.5" placeholder="e.g. 6"></label>'+
   (admin?'<label class="f">Whose work<select id="pt-staff" name="sid" required>'+activeStaff().map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('')+'</select></label>':'')+
   '</div><p class="small muted" style="margin:0">Work that is not complete can be resumed later from the task list.</p><button class="btn primary" type="submit">Save past work</button></form>';
@@ -823,6 +856,7 @@ document.addEventListener('click',async e=>{
         if(s.uid){if(v)b.set(doc(db,'users',s.uid),{role:'staff',staffId:id,name:s.name,username:s.user,pwChanged:true});else b.delete(doc(db,'users',s.uid))}
         await b.commit();await addHistory(id,[{field:'active',old:!v,new:v}]);log(id,(v?'Reactivated':'Deactivated')+' by '+meName())},s.name+(v?' reactivated':' deactivated'));ui.modal=null;break}
     case 'taskForm':taskFormModal();return;
+    case 'tEdit':taskEditModal(id);return;
     case 'pastForm':if(ui.user.role==='admin'&&!activeStaff().length){toast('Add staff first');return}pastFormModal();return;
     case 'tStart':case 'tDone':case 'tReopen':{const k=S.tasks.find(x=>x.id===id);
       const st=a==='tDone'?'done':'started';const p=a==='tDone'?100:a==='tReopen'?Math.min(k.progress,90):k.progress;
@@ -914,10 +948,11 @@ document.addEventListener('submit',async e=>{
     const admin=ui.user.role==='admin';const sid=admin?v.sid:ui.user.sid;if(!sid){toast('Choose a staff member');return}
     const m=v.month;if(!m||m<PAST_FROM||m>today().slice(0,7)){toast('Pick a month from October 2026 to this month');return}
     const p=+v.prog;const hours=v.hours?Math.round(+v.hours*2)/2:null;
+    if(v.startDate&&v.endDate&&v.endDate<v.startDate){toast('End date must be on or after start date');return}
     const ok=await run(async()=>{
       if(!S.clients.includes(client))await setDoc(doc(db,'config','clients'),{list:S.clients.concat([client])});
       const task={title:v.title.trim(),client,past:true,month:m,due:monthEnd(m),status:p===100?'done':'paused',progress:p,sid,by:admin?meName()+' (past work)':'Self (past work)',created:today(),hist:[]};
-      if(hours)task.hours=hours;
+      if(hours)task.hours=hours;if(v.startDate)task.startDate=v.startDate;if(v.endDate)task.endDate=v.endDate;
       await addDoc(collection(db,'tasks'),task);log(sid,'Added past work for '+fmonth(m)+': '+task.title+(admin?' (by '+meName()+')':''));return true},'Past work saved');
     if(ok){ui.modal=null;render()}return}
   if(k==='leave'){
@@ -929,8 +964,27 @@ document.addEventListener('submit',async e=>{
     if(ok){ui.modal=null;render()}return}
   if(k==='holiday'){if(S.holidays.some(h=>h.date===v.date)){toast('There is already a holiday on this date');return}
     await run(()=>setDoc(doc(db,'holidays',v.date),{date:v.date,name:v.name.trim()}),'Holiday added');f.reset();return}
+  if(k==='taskEdit'){const id=f.dataset.id;const kk=S.tasks.find(x=>x.id===id);if(!kk)return;
+    let client=v.client;if(client==='__new'){client=(v.newClient||'').trim();if(!client){toast('Enter the client name');return}}
+    const upd={title:v.title.trim(),client};
+    if(kk.past){const m=v.month;if(!m||m<PAST_FROM||m>today().slice(0,7)){toast('Pick a month from October 2026 to this month');return}
+      if(v.startDate&&v.endDate&&v.endDate<v.startDate){toast('End date must be on or after start date');return}
+      upd.month=m;upd.due=monthEnd(m);upd.startDate=v.startDate||null;upd.endDate=v.endDate||null;upd.hours=v.hours?Math.round(+v.hours*2)/2:null}
+    else{if(!v.due){toast('Pick a due date');return}upd.due=v.due}
+    const changed=Object.keys(upd).filter(x=>JSON.stringify(kk[x]??null)!==JSON.stringify(upd[x]??null));
+    if(!changed.length){ui.modal=null;render();return}
+    const ok=await run(async()=>{
+      if(!S.clients.includes(client))await setDoc(doc(db,'config','clients'),{list:S.clients.concat([client])});
+      await updateDoc(doc(db,'tasks',id),Object.assign({},upd,{edited:stamp()+' by '+meName()}));
+      log(kk.sid,'Edited task: '+upd.title+(ui.user.role==='admin'?' (by '+meName()+')':''));return true},'Task updated');
+    if(ok){ui.modal=null;render()}return}
   if(k==='checkout'){const s=me();const t=today();const upd={outTs:serverTimestamp()};if(v.ot)upd.otReason=v.ot.trim();
-    const ok=await run(async()=>{await updateDoc(doc(db,'att',s.id+'_'+t),upd);log(s.id,'Checked out at '+t12(nowHM())+(v.ot?' · OT reason: '+v.ot.trim():''));return true},'Checked out');
+    const ok=await run(async()=>{await updateDoc(doc(db,'att',s.id+'_'+t),upd);log(s.id,'Checked out at '+t12(nowHM())+(v.ot?' · OT reason: '+v.ot.trim():''));
+      // pause any task still running so its time stops at checkout
+      for(const k of S.tasks.filter(x=>x.sid===s.id&&x.status==='started')){
+        await updateDoc(doc(db,'tasks',k.id),{status:'paused',hist:arrayUnion(taskEvent(k,'pause',k.progress))}).catch(e=>console.warn('auto-pause',e));
+        log(s.id,'Task paused at checkout ('+k.progress+'%): '+k.title)}
+      return true},'Checked out');
     if(ok){ui.modal=null;render()}return}
   if(k==='attEdit'){const sid=f.dataset.id,d=f.dataset.d;const r=rec(sid,d)||{};
     if(!v.in){toast('Enter the check in time');return}if(v.out&&v.out<=v.in){toast('Check out must be after check in');return}
