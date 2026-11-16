@@ -586,11 +586,18 @@ function attView(admin){
 
 /* ---------- tasks ---------- */
 const TS={new:['Not started','p-mute'],started:['In progress','p-acc'],paused:['Paused','p-warn'],done:['Complete','p-ok']};
+const TASK_GROUPS=[['started','In progress'],['paused','Paused'],['new','Not started yet'],['done','Complete']];
 function taskList(list,admin){
   if(!list.length)return '<div class="empty">No tasks yet.</div>';
-  const t=today();const sk=k=>k.past?k.month+'-00':k.due;
-  list=list.slice().sort((a,b)=>(a.status==='done')-(b.status==='done')||(!!a.past-!!b.past)||(sk(a)<sk(b)?-1:sk(a)>sk(b)?1:0));
-  return '<div class="cards">'+list.map(k=>{const s=staffById(k.sid);const over=k.status!=='done'&&k.due<t;let actions='';
+  const sk=k=>k.past?k.month+'-00':k.due;
+  const sorted=list.slice().sort((a,b)=>(!!a.past-!!b.past)||(sk(a)<sk(b)?-1:sk(a)>sk(b)?1:0));
+  return TASK_GROUPS.map(([st,label])=>{const g=sorted.filter(k=>k.status===st);if(!g.length)return '';
+    if(st==='done')g.reverse();
+    const cards='<div class="cards">'+g.map(k=>taskCard(k,admin)).join('')+'</div>';
+    const title='<h3 style="margin:4px 0 0">'+label+' <span class="muted" style="font-weight:600">('+g.length+')</span></h3>';
+    return st==='done'?'<details class="stack"><summary style="cursor:pointer">'+title+'</summary><div style="margin-top:10px">'+cards+'</div></details>':'<section class="stack" style="gap:10px">'+title+cards+'</section>'}).join('')}
+function taskCard(k,admin){
+  {const t=today();const s=staffById(k.sid);const over=k.status!=='done'&&k.due<t;let actions='';
     if(k.status==='new')actions='<button class="btn sm primary" data-act="tStart" data-id="'+k.id+'">Start</button>';
     else if(k.status==='started')actions='<button class="btn sm" data-act="tPause" data-id="'+k.id+'">Pause</button><button class="btn sm ok" data-act="tDone" data-id="'+k.id+'">Complete</button>';
     else if(k.status==='paused')actions='<button class="btn sm primary" data-act="tStart" data-id="'+k.id+'">Resume</button><button class="btn sm ok" data-act="tDone" data-id="'+k.id+'">Complete</button>';
@@ -602,7 +609,7 @@ function taskList(list,admin){
     const meta='<div class="tl-row"><span><b>Start</b> '+(dt.start?fdshort(dt.start):'–')+'</span><span><b>End</b> '+(dt.end?fdshort(dt.end):(k.status==='done'?'–':'Not finished'))+'</span><span><b>Worked</b> '+(tot?minToHM(tot):'–')+(k.status==='started'?' (running)':'')+'</span></div>';
     return '<div class="card"><div class="spread"><span class="pill '+TS[k.status][1]+'">'+TS[k.status][0]+'</span>'+when+'</div><b>'+esc(k.title)+'</b>'+meta+
     '<div class="small muted">For: <b style="color:var(--ink)">'+esc(k.client)+'</b>'+(admin?' · '+esc(s?s.name:'?'):'')+(k.by&&!k.by.startsWith('Self')?' · '+esc(k.by):'')+'</div>'+
-    '<div class="row" style="gap:8px"><div class="bar" style="flex:1"><i style="width:'+k.progress+'%"></i></div><span class="mono small">'+k.progress+'%</span></div><div class="row" style="gap:6px">'+actions+'</div></div>'}).join('')+'</div>'}
+    '<div class="row" style="gap:8px"><div class="bar" style="flex:1"><i style="width:'+k.progress+'%"></i></div><span class="mono small">'+k.progress+'%</span></div><div class="row" style="gap:6px">'+actions+'</div></div>'}}
 function tasksView(admin){
   let list=S.tasks;if(!admin)list=list.filter(t=>t.sid===ui.user.sid);
   const f=ui.filter;if(admin&&f.staff)list=list.filter(t=>t.sid===f.staff);
@@ -662,7 +669,12 @@ function taskFormModal(){
   '<label class="f" id="newClientWrap" hidden>New client name<input id="tk-newclient" name="newClient"></label>'+
   '<label class="f">Due date<input id="tk-due" name="due" type="date" required value="'+today()+'"></label>'+
   (admin?'<label class="f">Assign to<select id="tk-staff" name="sid" required>'+activeStaff().map(s=>'<option value="'+s.id+'">'+esc(s.name)+' · '+esc(s.role)+'</option>').join('')+'</select></label>':'')+
-  '</div><button class="btn primary" type="submit">'+(admin?'Assign':'Add task')+'</button></form>';
+  '</div>'+(admin?'<p class="small muted" style="margin:0">The task will show as “Not started yet” until the staff member starts it.</p>':
+  '<fieldset style="border:1px solid var(--line);border-radius:10px;padding:12px"><legend class="small muted" style="font-weight:700;padding:0 6px">When will you start?</legend><div class="row" style="gap:18px">'+
+  '<label class="row" style="gap:8px"><input type="radio" id="tk-when-later" name="when" value="later" style="width:auto" checked> Start later</label>'+
+  '<label class="row" style="gap:8px"><input type="radio" id="tk-when-now" name="when" value="now" style="width:auto"> Start now</label></div>'+
+  '<p class="small muted" style="margin:8px 0 0">“Start later” keeps it in the Not started yet list so you don\'t have to remember it. “Start now” starts the timer right away.</p></fieldset>')+
+  '<button class="btn primary" type="submit">'+(admin?'Assign':'Add task')+'</button></form>';
   render()}
 function pauseModal(id){const k=S.tasks.find(t=>t.id===id);
   ui.modal=()=>'<div class="stack"><div class="spread"><h2>How much is done?</h2><button class="btn sm" data-act="close">Close</button></div><p class="muted" style="margin:0">'+esc(k.title)+'</p>'+
@@ -745,14 +757,17 @@ function sHome(){
     btns+='<button class="btn primary" data-act="checkOutAsk" '+(onBreak?'disabled title="End your break first"':'')+'>Check Out</button>';
     if(i.half==='second')note='<div class="note">Your second-half leave is approved. You can check out at '+t12(fromMin(i.effE))+'.</div>'}
   const tl=[];if(r.in)tl.push(['In',r.in]);(r.breaks||[]).forEach(b=>{tl.push(['Break',b.in+(b.out?'–'+b.out:'')])});if(r.out)tl.push(['Out',r.out]);
-  const b=balance(s,t);const my=S.tasks.filter(k=>k.sid===s.id&&k.status!=='done').slice(0,4);
+  const b=balance(s,t);const open=S.tasks.filter(k=>k.sid===s.id&&k.status!=='done');
+  const ord={started:0,paused:1,new:2};const my=open.slice().sort((a,c)=>ord[a.status]-ord[c.status]).slice(0,5);
+  const cnt=st=>open.filter(k=>k.status===st).length;
+  const taskSummary=open.length?'<div class="row" style="gap:6px"><span class="pill p-acc">In progress '+cnt('started')+'</span><span class="pill p-warn">Paused '+cnt('paused')+'</span><span class="pill p-mute">Not started yet '+cnt('new')+'</span></div>':'';
   return head('Hello, '+esc(s.name.split(' ')[0]),fdate(t)+', '+DAYS[pd(t).getDay()]+' · Shift '+t12(s.start)+' – '+t12(s.end))+
   (!ui.user.pwChanged?'<div class="note warn">You are still using the starting password. Please change it from Profile.</div>':'')+
   '<section class="panel punchbox"><div class="stack" style="gap:6px"><div class="row" style="gap:12px"><span class="clock" id="liveClock">'+t12(nowHM())+'</span><span class="muted">'+state+'</span></div>'+
   '<div class="row" style="gap:6px">'+(i.kind==='present'||i.kind==='holidaywork'?statusPills(i):'')+'</div>'+
   (tl.length?'<div class="tl-row">'+tl.map(x=>'<span><b>'+x[0]+'</b> '+(x[0]==='Break'?x[1].split('–').map(t12).join(' – '):t12(x[1]))+'</span>').join('')+'</div>':'')+'</div>'+
   (btns?'<div class="row">'+btns+'</div>':'')+'</section>'+note+
-  '<div class="grid g2">'+(s.perms&&s.perms.tasks?'<section class="panel stack"><div class="spread"><h3>Open tasks</h3><button class="btn sm" data-act="nav" data-v="tasks">See all</button></div>'+(my.length?my.map(k=>'<div><div class="spread"><b>'+esc(k.title)+'</b><span class="pill '+TS[k.status][1]+'">'+TS[k.status][0]+'</span></div><div class="row small muted" style="gap:8px"><div class="bar" style="flex:1"><i style="width:'+k.progress+'%"></i></div>'+k.progress+'%</div></div>').join(''):'<p class="muted" style="margin:0">No open tasks. Add today\'s work.</p>')+'</section>':'')+
+  '<div class="grid g2">'+(s.perms&&s.perms.tasks?'<section class="panel stack"><div class="spread"><h3>Open tasks</h3><button class="btn sm" data-act="nav" data-v="tasks">See all</button></div>'+taskSummary+(my.length?my.map(k=>'<div><div class="spread"><b>'+esc(k.title)+'</b><span class="pill '+TS[k.status][1]+'">'+TS[k.status][0]+'</span></div><div class="row small muted" style="gap:8px"><div class="bar" style="flex:1"><i style="width:'+k.progress+'%"></i></div>'+k.progress+'%</div></div>').join(''):'<p class="muted" style="margin:0">No open tasks. Add today\'s work.</p>')+'</section>':'')+
   '<section class="panel stack"><h3>Paid leave</h3><div class="row" style="gap:24px"><div><span class="clock">'+b.available+'</span><div class="small muted">Available now</div></div><div><span class="clock">'+b.used+'<span class="muted" style="font-size:16px"> / '+b.total+'</span></span><div class="small muted">Used this leave year</div></div></div><span class="small muted">Leave year '+fdshort(b.ly.start)+' – '+fdate(b.ly.end)+'</span></section></div>'}
 function checkoutModal(){
   const s=me();const t=nowHM();const i=dayInfo(s,today());const o=toMin(t),e=toMin(s.end);const holiday=i.kind==='holidaywork';
@@ -940,8 +955,10 @@ document.addEventListener('submit',async e=>{
     const admin=ui.user.role==='admin';const sid=admin?v.sid:ui.user.sid;if(!sid){toast('Choose a staff member');return}
     const ok=await run(async()=>{
       if(!S.clients.includes(client))await setDoc(doc(db,'config','clients'),{list:S.clients.concat([client])});
-      const task={title:v.title.trim(),client,due:v.due,status:'new',progress:0,sid,by:admin?meName()+' (assigned)':'Self',created:today(),hist:[{d:today(),t:nowHM(),a:'create',p:0,n:uid()}]};
-      await addDoc(collection(db,'tasks'),task);log(sid,(admin?'Task assigned by '+meName()+': ':'Added task: ')+task.title);return true},admin?'Task assigned':'Task added');
+      const now=!admin&&v.when==='now';
+      const hist=[{d:today(),t:nowHM(),a:'create',p:0,n:uid()}];if(now)hist.push({d:today(),t:nowHM(),a:'start',p:0,n:uid()});
+      const task={title:v.title.trim(),client,due:v.due,status:now?'started':'new',progress:0,sid,by:admin?meName()+' (assigned)':'Self',created:today(),hist};
+      await addDoc(collection(db,'tasks'),task);log(sid,(admin?'Task assigned by '+meName()+': ':now?'Added and started task: ':'Added task (start later): ')+task.title);return true},admin?'Task assigned':(v.when==='now'?'Task added and started':'Task added to Not started yet'));
     if(ok){ui.modal=null;render()}return}
   if(k==='pastTask'){
     let client=v.client;if(client==='__new'){client=(v.newClient||'').trim();if(!client){toast('Enter the client name');return}}
