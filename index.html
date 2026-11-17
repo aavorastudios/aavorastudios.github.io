@@ -604,7 +604,8 @@ function taskCard(k,admin){
     else actions='<button class="btn sm" data-act="tReopen" data-id="'+k.id+'">Reopen</button>';
     actions+='<button class="btn sm" data-act="tEdit" data-id="'+k.id+'">Edit</button>';
     if(admin)actions+='<button class="btn sm bad" data-act="tDelAsk" data-id="'+k.id+'">Delete</button>';
-    const when=k.past?'<span class="pill p-violet">Past work · '+fmonth(k.month)+'</span>':'<span class="small '+(over?'minus':'muted')+'">Due '+fdshort(k.due)+(over?' · overdue':'')+'</span>';
+    const fOver=k.past&&k.finishBy&&k.status!=='done'&&k.finishBy<t;
+    const when=k.past?'<span class="row" style="gap:6px"><span class="pill p-violet">Past work · '+fmonth(k.month)+'</span>'+(k.finishBy&&k.status!=='done'?'<span class="small '+(fOver?'minus':'muted')+'">Due '+fdshort(k.finishBy)+(fOver?' · overdue':'')+'</span>':'')+'</span>':'<span class="small '+(over?'minus':'muted')+'">Due '+fdshort(k.due)+(over?' · overdue':'')+'</span>';
     const dt=taskDates(k);const tot=taskTotalMin(k);
     const meta='<div class="tl-row"><span><b>Start</b> '+(dt.start?fdshort(dt.start):'–')+'</span><span><b>End</b> '+(dt.end?fdshort(dt.end):(k.status==='done'?'–':'Not finished'))+'</span><span><b>Worked</b> '+(tot?minToHM(tot):'–')+(k.status==='started'?' (running)':'')+'</span></div>';
     return '<div class="card"><div class="spread"><span class="pill '+TS[k.status][1]+'">'+TS[k.status][0]+'</span>'+when+'</div><b>'+esc(k.title)+'</b>'+meta+
@@ -633,7 +634,8 @@ function taskDates(k){
   const lastDone=k.status==='done'?((ev.filter(e=>e.a==='done').pop())||{}).d||null:null;
   return{start:k.startDate||firstStart,end:k.endDate||lastDone}}
 const pastDateFields=(k)=>'<label class="f">Start date (optional)<input id="pt-start" name="startDate" type="date" min="'+PAST_FROM+'-01" max="'+today()+'" value="'+esc(k.startDate||'')+'"></label>'+
-  '<label class="f">End date (optional)<input id="pt-end" name="endDate" type="date" min="'+PAST_FROM+'-01" max="'+today()+'" value="'+esc(k.endDate||'')+'"></label>';
+  '<label class="f">End date (optional)<input id="pt-end" name="endDate" type="date" min="'+PAST_FROM+'-01" max="'+today()+'" value="'+esc(k.endDate||'')+'"></label>'+
+  '<label class="f">Due date – finish by (optional, for work not complete)<input id="pt-finish" name="finishBy" type="date" value="'+esc(k.finishBy||'')+'"></label>';
 function taskEditModal(id){
   const k=S.tasks.find(x=>x.id===id);if(!k)return;const cur=today().slice(0,7);
   const clients=S.clients.includes(k.client)?S.clients:S.clients.concat([k.client]);
@@ -969,7 +971,7 @@ document.addEventListener('submit',async e=>{
     const ok=await run(async()=>{
       if(!S.clients.includes(client))await setDoc(doc(db,'config','clients'),{list:S.clients.concat([client])});
       const task={title:v.title.trim(),client,past:true,month:m,due:monthEnd(m),status:p===100?'done':'paused',progress:p,sid,by:admin?meName()+' (past work)':'Self (past work)',created:today(),hist:[]};
-      if(hours)task.hours=hours;if(v.startDate)task.startDate=v.startDate;if(v.endDate)task.endDate=v.endDate;
+      if(hours)task.hours=hours;if(v.startDate)task.startDate=v.startDate;if(v.endDate)task.endDate=v.endDate;if(v.finishBy)task.finishBy=v.finishBy;
       await addDoc(collection(db,'tasks'),task);log(sid,'Added past work for '+fmonth(m)+': '+task.title+(admin?' (by '+meName()+')':''));return true},'Past work saved');
     if(ok){ui.modal=null;render()}return}
   if(k==='leave'){
@@ -986,7 +988,7 @@ document.addEventListener('submit',async e=>{
     const upd={title:v.title.trim(),client};
     if(kk.past){const m=v.month;if(!m||m<PAST_FROM||m>today().slice(0,7)){toast('Pick a month from October 2026 to this month');return}
       if(v.startDate&&v.endDate&&v.endDate<v.startDate){toast('End date must be on or after start date');return}
-      upd.month=m;upd.due=monthEnd(m);upd.startDate=v.startDate||null;upd.endDate=v.endDate||null;upd.hours=v.hours?Math.round(+v.hours*2)/2:null}
+      upd.month=m;upd.due=monthEnd(m);upd.startDate=v.startDate||null;upd.endDate=v.endDate||null;upd.finishBy=v.finishBy||null;upd.hours=v.hours?Math.round(+v.hours*2)/2:null}
     else{if(!v.due){toast('Pick a due date');return}upd.due=v.due}
     const changed=Object.keys(upd).filter(x=>JSON.stringify(kk[x]??null)!==JSON.stringify(upd[x]??null));
     if(!changed.length){ui.modal=null;render();return}
